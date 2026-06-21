@@ -155,3 +155,66 @@ textarea { resize: vertical; margin: 10px 0; }
 .link-text b { font-size: 1rem; }
 .link-text small { color: var(--muted); font-size: .82rem; }
 .link-arrow { color: var(--muted); font-size: 1.1rem; }
+
+/* ===== 상위 페이지(메뉴) ===== */
+.menu-lead { font-size: .95rem; color: var(--muted); margin: 4px 2px 12px; font-weight: 600; }
+.menu-card {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 18px; margin-bottom: 14px; text-decoration: none; color: var(--text);
+  border-left: 5px solid var(--blue);
+}
+.menu-card:active { transform: scale(.99); }
+.menu-weekly { border-left-color: var(--blue); }
+.menu-free { border-left-color: var(--free); }
+.menu-emoji {
+  font-size: 1.9rem; width: 52px; height: 52px; flex: 0 0 52px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg); border-radius: 14px;
+}
+.menu-text { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+.menu-text b { font-size: 1.15rem; }
+.menu-text small { color: var(--muted); font-size: .85rem; }
+.menu-arrow { color: var(--muted); font-size: 1.6rem; font-weight: 300; }
+
+/* ===== 뒤로가기 링크 ===== */
+.back-link {
+  position: absolute; left: 14px; top: 18px;
+  color: #fff; text-decoration: none; font-size: .9rem; font-weight: 600;
+  opacity: .92;
+}
+.topbar { position: relative; }
+
+/* ===== 주간안내 ===== */
+.event-list { list-style: none; margin: 0; padding: 0; }
+.event-list li {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.event-list li:last-child { border-bottom: 0; }
+.event-list li.empty .ev-text { color: var(--muted); }
+.ev-day {
+  flex: 0 0 84px; font-weight: 700; font-size: .85rem; color: var(--blue);
+}
+.ev-text { font-size: .95rem; }
+
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.timetable { border-collapse: collapse; width: 100%; min-width: 460px; font-size: .85rem; }
+.timetable th, .timetable td {
+  border: 1px solid var(--border); padding: 8px 6px; text-align: center; white-space: nowrap;
+}
+.timetable tr:first-child th { background: var(--blue); color: #fff; }
+.timetable th:first-child { background: var(--bg); color: var(--text); font-weight: 700; width: 40px; }
+.timetable tr:first-child th:first-child { background: var(--blue-dark); color: #fff; }
+.timetable td:empty::after { content: '·'; color: var(--border); }
+
+.sub-h { margin: 4px 0 8px; font-size: .95rem; font-weight: 700; }
+.duty-list { list-style: none; margin: 0 0 12px; padding: 0; }
+.duty-list li {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  padding: 9px 12px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px;
+}
+.duty-area { font-weight: 600; font-size: .92rem; }
+.duty-who { color: var(--muted); font-size: .88rem; text-align: right; }
+.note-list { margin: 0; padding-left: 18px; color: var(--text); }
+.note-list li { margin-bottom: 4px; font-size: .92rem; }

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>자유복의 날 — 육민관중학교</title>
+  <meta name="description" content="육민관중학교 자유복 입는 날을 자동으로 찾아 보여주는 페이지" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="자유복의 날" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%91%95%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="back-link" href="index.html" aria-label="홈으로">‹ 홈</a>
+    <h1>👕 자유복의 날</h1>
+    <p class="subtitle">육민관중학교 · 자동 확인</p>
+  </header>
+
+  <main class="container">
+    <!-- 다음 자유복의 날 -->
+    <section class="card hero" id="heroCard">
+      <p class="hero-label">다음 자유복의 날</p>
+      <p class="hero-dday" id="heroDday">불러오는 중…</p>
+      <p class="hero-date" id="heroDate">학교 일정을 확인하고 있어요</p>
+    </section>
+
+    <!-- 달력 -->
+    <section class="card" id="calCard">
+      <div class="cal-head">
+        <button class="icon-btn" id="prevMonth" aria-label="이전 달">‹</button>
+        <h2 id="calTitle">—</h2>
+        <button class="icon-btn" id="nextMonth" aria-label="다음 달">›</button>
+      </div>
+      <div class="cal-grid cal-weekdays">
+        <span class="sun">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="sat">토</span>
+      </div>
+      <div class="cal-grid" id="calBody"></div>
+      <p class="legend"><span class="dot dot-free"></span> 자유복 입는 날</p>
+    </section>
+
+    <!-- 자유복 날짜 목록 -->
+    <section class="card">
+      <h2 class="card-title">자유복 입는 날 목록</h2>
+      <ul class="date-list" id="dateList"></ul>
+      <p class="empty-hint hidden" id="emptyHint">표시할 자유복 날짜가 없어요.</p>
+    </section>
+
+    <!-- 상태 / 출처 -->
+    <section class="card status-card">
+      <p class="status" id="statusLine">—</p>
+      <a class="btn btn-block btn-outline" id="sourceLink" href="https://ymk.gwe.ms.kr/schedule/list.do?m=0203" target="_blank" rel="noopener">학교 월중교육활동에서 직접 보기 ↗</a>
+      <p class="help small">이 페이지는 학교 홈페이지의 <b>학교소식 → 월중교육활동</b> 일정에서 “자유복”이 포함된 날짜를 자동으로 찾아 보여줍니다.</p>
+    </section>
+
+    <footer class="foot">
+      <span id="updatedFoot">육민관중학교</span>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

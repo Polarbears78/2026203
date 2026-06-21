@@ -1,9 +1,11 @@
 /* 서비스 워커: 오프라인에서도 앱이 열리도록 정적 파일을 캐시한다.
  * data.json 은 항상 최신을 받도록 네트워크 우선으로 처리한다. */
-const CACHE = 'jayubok-v2';
+const CACHE = 'jayubok-v3';
 const ASSETS = [
   './',
   './index.html',
+  './jayubok.html',
+  './weekly.html',
   './style.css',
   './app.js',
   './manifest.webmanifest',

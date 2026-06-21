@@ -38,9 +38,16 @@ python3 -m http.server 8000
 node scripts/scrape.mjs   # data.json 생성/갱신
 ```
 
+## 페이지 구성
+
+- `index.html` — **상위 페이지**: 주간안내 / 자유복의 날 선택
+- `weekly.html` — **주간안내**: 이번 주 일정 · 시간표 · 청소 당번 (2학년 3반)
+- `jayubok.html` — **자유복의 날**: 다음 자유복 입는 날 자동 확인
+
 ## 파일 구성
 
-- `index.html` / `style.css` / `app.js` — 자동 표시 페이지
+- `index.html` / `weekly.html` / `jayubok.html` — 페이지
+- `style.css` / `app.js` — 공통 스타일 · 자유복 페이지 로직
 - `data.json` — 자동 추출된 자유복 날짜 (Actions가 갱신)
 - `scripts/scrape.mjs` — 학교 일정 스크래퍼
 - `.github/workflows/scrape.yml` — 매일 스크래핑 + Pages 배포

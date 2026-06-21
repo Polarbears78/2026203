@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>주간안내 — 2학년 3반</title>
+  <meta name="description" content="2학년 3반 주간안내 — 이번 주 일정, 시간표, 청소 당번" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="주간안내" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%97%93%EF%B8%8F%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="back-link" href="index.html" aria-label="홈으로">‹ 홈</a>
+    <h1>🗓️ 주간안내</h1>
+    <p class="subtitle" id="weekSub">2학년 3반</p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2 class="card-title">1. 이번 주 주요 일정</h2>
+      <ul class="event-list" id="eventList"></ul>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">2. 주간 시간표</h2>
+      <div class="table-wrap">
+        <table class="timetable" id="timetable"></table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">3. 생활 · 안전 지도</h2>
+      <h3 class="sub-h">학급 주간 청소</h3>
+      <ul class="duty-list" id="dutyList"></ul>
+      <ul class="note-list" id="noteList"></ul>
+    </section>
+
+    <footer class="foot">
+      <span>육민관중학교 2학년 3반</span>
+    </footer>
+  </main>
+
+  <script>
+    const W = {
+      week: '6/15(월) ~ 6/20(토)',
+      days: ['월(15)', '화(16)', '수(17)', '목(18)', '금(19)'],
+      events: [
+        { day: '월 (6/15)', text: '' },
+        { day: '화 (6/16)', text: '졸업앨범 촬영' },
+        { day: '수 (6/17)', text: '창체 동아리 · 양성평등 캠페인 · 심화과학반' },
+        { day: '목 (6/18)', text: '학생 불균형 체형 검사' },
+        { day: '금 (6/19)', text: '1학기 방과후 교육활동 종료' },
+        { day: '토 (6/20)', text: '원주시 학교스포츠클럽대회 (~21)' },
+      ],
+      timetable: [
+        ['1', '회화 유태', '역사 이언', '영어 유태', '한문 정은', '과학 김재'],
+        ['2', '스포츠 이용', '한문 정은', '미술 전지', '국어 이현', '수학 김영'],
+        ['3', '기가 김규', '체육 함승', '미술 전지', '도덕 조은', '체육 함승'],
+        ['4', '기가 김규', '수학 김영', '기가 김규', '체육 함승', '영어 유태'],
+        ['5', '한문 정은', '국어 이현', '과학 김재', '수학 김영', '역사 이언'],
+        ['6', '역사 이언', '도덕 조은', '동아리 김재', '과학 김재', '국어 이현'],
+        ['7', '국어 이현', '과학 김재', '', '', ''],
+      ],
+      duties: [
+        { area: '바닥 쓸기', who: '22 정윤후, 23 정지우' },
+        { area: '바닥 마대 걸레', who: '24 조연우, 25 최하은' },
+        { area: '분리수거 · 쓰레기통', who: '26 허노아, 28 황세율' },
+        { area: '손걸레', who: '1 강유주' },
+        { area: '청소 일지', who: '당번 순환' },
+      ],
+      notes: ['6월 급식 순서: 3-1-2', '주변을 잘 살피고, 활동하기'],
+    };
+
+    document.getElementById('weekSub').textContent = '2학년 3반 · ' + W.week;
+
+    // 주요 일정
+    const ev = document.getElementById('eventList');
+    W.events.forEach((e) => {
+      const li = document.createElement('li');
+      if (!e.text) li.classList.add('empty');
+      const d = document.createElement('span');
+      d.className = 'ev-day';
+      d.textContent = e.day;
+      const t = document.createElement('span');
+      t.className = 'ev-text';
+      t.textContent = e.text || '일정 없음';
+      li.append(d, t);
+      ev.appendChild(li);
+    });
+
+    // 시간표
+    const tt = document.getElementById('timetable');
+    const head = document.createElement('tr');
+    head.innerHTML = '<th>교시</th>' + W.days.map((d) => '<th>' + d + '</th>').join('');
+    tt.appendChild(head);
+    W.timetable.forEach((row) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<th>' + row[0] + '</th>' +
+        row.slice(1).map((c) => '<td>' + (c || '') + '</td>').join('');
+      tt.appendChild(tr);
+    });
+
+    // 청소 당번
+    const dl = document.getElementById('dutyList');
+    W.duties.forEach((d) => {
+      const li = document.createElement('li');
+      const a = document.createElement('span');
+      a.className = 'duty-area';
+      a.textContent = d.area;
+      const w = document.createElement('span');
+      w.className = 'duty-who';
+      w.textContent = d.who;
+      li.append(a, w);
+      dl.appendChild(li);
+    });
+
+    // 안내
+    const nl = document.getElementById('noteList');
+    W.notes.forEach((n) => {
+      const li = document.createElement('li');
+      li.textContent = n;
+      nl.appendChild(li);
+    });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>
