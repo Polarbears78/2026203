@@ -290,3 +290,34 @@ function init() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+// ---- PWA: 서비스 워커 등록 + 설치 버튼 ----
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const card = document.getElementById('installCard');
+  if (card) card.hidden = false;
+});
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('installBtn');
+  if (btn) {
+    btn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      document.getElementById('installCard').hidden = true;
+    });
+  }
+});
+window.addEventListener('appinstalled', () => {
+  const card = document.getElementById('installCard');
+  if (card) card.hidden = true;
+});
