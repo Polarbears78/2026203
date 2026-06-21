@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>자유복의 날 — 육민관중학교</title>
+  <meta name="description" content="육민관중학교 자유복 입는 날을 확인하고 D-day로 알려주는 웹앱" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%91%95%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>👕 자유복의 날</h1>
+    <p class="subtitle">육민관중학교</p>
+  </header>
+
+  <main class="container">
+    <!-- 다음 자유복의 날 카드 -->
+    <section class="card hero" id="heroCard">
+      <p class="hero-label">다음 자유복의 날</p>
+      <p class="hero-dday" id="heroDday">—</p>
+      <p class="hero-date" id="heroDate">아래에서 날짜를 추가해 주세요</p>
+    </section>
+
+    <!-- 달력 -->
+    <section class="card">
+      <div class="cal-head">
+        <button class="icon-btn" id="prevMonth" aria-label="이전 달">‹</button>
+        <h2 id="calTitle">2026년 6월</h2>
+        <button class="icon-btn" id="nextMonth" aria-label="다음 달">›</button>
+      </div>
+      <div class="cal-grid cal-weekdays">
+        <span class="sun">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="sat">토</span>
+      </div>
+      <div class="cal-grid" id="calBody"></div>
+      <p class="legend"><span class="dot dot-free"></span> 자유복 입는 날</p>
+    </section>
+
+    <!-- 자유복 날짜 목록 -->
+    <section class="card">
+      <h2 class="card-title">저장된 자유복 날짜</h2>
+      <ul class="date-list" id="dateList"></ul>
+      <p class="empty-hint" id="emptyHint">아직 저장된 날짜가 없어요.</p>
+    </section>
+
+    <!-- 직접 추가 -->
+    <section class="card">
+      <h2 class="card-title">날짜 직접 추가</h2>
+      <div class="row">
+        <input type="date" id="manualDate" />
+        <button class="btn" id="addManual">추가</button>
+      </div>
+    </section>
+
+    <!-- 월중교육활동에서 가져오기 -->
+    <section class="card">
+      <h2 class="card-title">월중교육활동에서 가져오기</h2>
+      <p class="help">
+        학교 홈페이지의 <b>월중교육활동</b> 글을 열고, 일정 표 내용을 복사해서
+        아래에 붙여넣으면 <b>“자유복”</b>이 들어간 날짜를 자동으로 찾아드려요.
+      </p>
+      <div class="row">
+        <label class="ym-label">기준 연·월
+          <input type="month" id="parseMonth" />
+        </label>
+      </div>
+      <textarea id="parseInput" rows="6" placeholder="예) 17일 자유복의 날 / 6/17 자유복 ... 월중교육활동 내용을 붙여넣으세요"></textarea>
+      <button class="btn btn-block" id="parseBtn">자유복 날짜 찾기</button>
+      <div id="parseResult" class="parse-result"></div>
+    </section>
+
+    <!-- 학교 바로가기 -->
+    <section class="card">
+      <h2 class="card-title">학교 홈페이지에서 직접 확인하기</h2>
+      <ol class="steps">
+        <li>아래 <b>월중교육활동 바로가기</b>를 누릅니다.</li>
+        <li><b>학교소식 → 월중교육활동</b>에서 해당 월의 글을 엽니다.</li>
+        <li>일정에서 <b>“자유복 입는 날”</b>을 찾습니다.</li>
+      </ol>
+      <a class="btn btn-block btn-outline" id="schoolLink" href="https://ymk.gwe.ms.kr/main.do" target="_blank" rel="noopener">월중교육활동 바로가기 ↗</a>
+    </section>
+
+    <footer class="foot">
+      <button class="link-btn" id="clearAll">전체 삭제</button>
+      <span>· 데이터는 이 기기에만 저장됩니다</span>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
