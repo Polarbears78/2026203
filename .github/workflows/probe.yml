@@ -1,0 +1,35 @@
+name: Probe school site
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/probe.yml'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch school schedule pages
+        run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
+          for URL in \
+            "https://ymk.gwe.ms.kr/schedule/list.do?m=0203" \
+            "https://ymk.gwe.ms.kr/schedule/view.do?seq=1790333&m=0203" \
+            "https://ymk.gwe.ms.kr/main.do" ; do
+            echo "==================================================="
+            echo "URL: $URL"
+            code=$(curl -s -o /tmp/page.html -w "%{http_code}" -A "$UA" -L --max-time 30 "$URL" || echo "ERR")
+            echo "HTTP: $code"
+            echo "BYTES: $(wc -c < /tmp/page.html 2>/dev/null)"
+            echo "--- title ---"
+            grep -oiE "<title>[^<]*</title>" /tmp/page.html | head -1 || true
+            echo "--- contains 자유복? ---"
+            grep -c "자유복" /tmp/page.html || true
+            echo "--- view.do links (seq) ---"
+            grep -oiE "view\.do\?seq=[0-9]+" /tmp/page.html | head -10 || true
+            echo "--- lines with 자유복 (context) ---"
+            grep -o ".\{0,40\}자유복.\{0,40\}" /tmp/page.html | head -10 || true
+            echo "--- attachments (img/hwp/pdf) ---"
+            grep -oiE "(download|fileDown|\.hwp|\.pdf|\.png|\.jpg)[^\" ]*" /tmp/page.html | head -10 || true
+          done
