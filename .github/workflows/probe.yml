@@ -10,26 +10,33 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch school schedule pages
+      - name: Inspect schedule structure
         run: |
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
-          for URL in \
-            "https://ymk.gwe.ms.kr/schedule/list.do?m=0203" \
-            "https://ymk.gwe.ms.kr/schedule/view.do?seq=1790333&m=0203" \
-            "https://ymk.gwe.ms.kr/main.do" ; do
-            echo "==================================================="
-            echo "URL: $URL"
-            code=$(curl -s -o /tmp/page.html -w "%{http_code}" -A "$UA" -L --max-time 30 "$URL" || echo "ERR")
-            echo "HTTP: $code"
-            echo "BYTES: $(wc -c < /tmp/page.html 2>/dev/null)"
-            echo "--- title ---"
-            grep -oiE "<title>[^<]*</title>" /tmp/page.html | head -1 || true
-            echo "--- contains 자유복? ---"
-            grep -c "자유복" /tmp/page.html || true
-            echo "--- view.do links (seq) ---"
-            grep -oiE "view\.do\?seq=[0-9]+" /tmp/page.html | head -10 || true
-            echo "--- lines with 자유복 (context) ---"
-            grep -o ".\{0,40\}자유복.\{0,40\}" /tmp/page.html | head -10 || true
-            echo "--- attachments (img/hwp/pdf) ---"
-            grep -oiE "(download|fileDown|\.hwp|\.pdf|\.png|\.jpg)[^\" ]*" /tmp/page.html | head -10 || true
-          done
+
+          echo "########## LIST PAGE (current month) ##########"
+          curl -s -A "$UA" -L --max-time 30 "https://ymk.gwe.ms.kr/schedule/list.do?m=0203" -o /tmp/list.html
+          echo "BYTES: $(wc -c < /tmp/list.html)"
+          echo "--- month/year hints ---"
+          grep -oE "20[0-9]{2}[.\-년 ]+[0-9]{1,2}" /tmp/list.html | head -5 || true
+          grep -oiE "(year|month|ym|sch_year|sch_month)[\"'=:][^,&\"'>]{0,12}" /tmp/list.html | head -10 || true
+          echo "--- 300 chars BEFORE each 자유복 (find day cell) ---"
+          grep -oP '.{300}자유복' /tmp/list.html | head -4 || true
+          echo "--- viewData seqs near 자유복 ---"
+          grep -oE "viewData\('[0-9]+'\)[^<]*자유복[^<]*" /tmp/list.html | head -10 || true
+          echo "--- next/prev month nav ---"
+          grep -oiE "(goMonth|moveMonth|changeMonth|list\.do[^\"']*)" /tmp/list.html | head -10 || true
+
+          echo ""
+          echo "########## EVENT DETAIL view.do?seq=1886429 ##########"
+          curl -s -A "$UA" -L --max-time 30 "https://ymk.gwe.ms.kr/schedule/view.do?seq=1886429&m=0203" -o /tmp/ev.html
+          echo "BYTES: $(wc -c < /tmp/ev.html)"
+          echo "--- date patterns ---"
+          grep -oE "20[0-9]{2}[-./][0-9]{1,2}[-./][0-9]{1,2}" /tmp/ev.html | head -10 || true
+          grep -oE "[0-9]{1,2}월[ ]*[0-9]{1,2}일" /tmp/ev.html | head -10 || true
+          echo "--- 자유복 count ---"
+          grep -c "자유복" /tmp/ev.html || true
+          echo "--- text around 자유복 (200 before/after) ---"
+          grep -oP '.{0,120}자유복.{0,200}' /tmp/ev.html | head -4 || true
+          echo "--- table rows (th/td) of detail ---"
+          grep -oiE "<th[^>]*>[^<]{1,20}</th>|<td[^>]*>[^<]{1,40}</td>" /tmp/ev.html | head -30 || true
