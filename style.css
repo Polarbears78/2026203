@@ -138,3 +138,20 @@ textarea { resize: vertical; margin: 10px 0; }
 
 .foot { text-align: center; color: var(--muted); font-size: .82rem; margin-top: 6px; }
 .link-btn { border: none; background: none; color: var(--sun); cursor: pointer; font: inherit; text-decoration: underline; }
+
+/* 다른 페이지 바로가기 링크 */
+.link-card { padding: 0; overflow: hidden; }
+.link-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 18px; text-decoration: none; color: var(--text);
+}
+.link-row:active { background: var(--bg); }
+.link-emoji {
+  font-size: 1.6rem; width: 44px; height: 44px; flex: 0 0 44px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg); border-radius: 12px;
+}
+.link-text { display: flex; flex-direction: column; line-height: 1.25; flex: 1; }
+.link-text b { font-size: 1rem; }
+.link-text small { color: var(--muted); font-size: .82rem; }
+.link-arrow { color: var(--muted); font-size: 1.1rem; }
