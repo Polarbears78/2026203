@@ -1,6 +1,7 @@
-/* 서비스 워커: 오프라인에서도 앱이 열리도록 정적 파일을 캐시한다.
- * data.json 은 항상 최신을 받도록 네트워크 우선으로 처리한다. */
-const CACHE = 'jayubok-v3';
+/* 서비스 워커
+ * - HTML 문서와 data.json: 네트워크 우선(항상 최신), 오프라인 시 캐시로 폴백
+ * - 그 외 정적 파일(css/js/이미지): 캐시 우선 */
+const CACHE = 'jayubok-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -26,35 +27,41 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+function networkFirst(request) {
+  return fetch(request)
+    .then((res) => {
+      if (res.ok && new URL(request.url).origin === self.location.origin) {
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(request, copy));
+      }
+      return res;
+    })
+    .catch(() => caches.match(request).then((c) => c || caches.match('./index.html')));
+}
+
+function cacheFirst(request) {
+  return caches.match(request).then((cached) => {
+    if (cached) return cached;
+    return fetch(request).then((res) => {
+      if (res.ok && new URL(request.url).origin === self.location.origin) {
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(request, copy));
+      }
+      return res;
+    });
+  });
+}
+
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
+  const isHTML = e.request.mode === 'navigate' ||
+    url.pathname.endsWith('/') || url.pathname.endsWith('.html');
+  const isData = url.pathname.endsWith('/data.json');
 
-  // data.json: 네트워크 우선 (최신 일정), 실패 시 캐시
-  if (url.pathname.endsWith('/data.json')) {
-    e.respondWith(
-      fetch(e.request)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(e.request, copy));
-          return res;
-        })
-        .catch(() => caches.match(e.request))
-    );
-    return;
+  if (isHTML || isData) {
+    e.respondWith(networkFirst(e.request));
+  } else {
+    e.respondWith(cacheFirst(e.request));
   }
-
-  // 그 외: 캐시 우선
-  e.respondWith(
-    caches.match(e.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(e.request).then((res) => {
-        if (res.ok && url.origin === self.location.origin) {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(e.request, copy));
-        }
-        return res;
-      });
-    })
-  );
 });
