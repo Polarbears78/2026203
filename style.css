@@ -218,3 +218,5 @@ textarea { resize: vertical; margin: 10px 0; }
 .duty-who { color: var(--muted); font-size: .88rem; text-align: right; }
 .note-list { margin: 0; padding-left: 18px; color: var(--text); }
 .note-list li { margin-bottom: 4px; font-size: .92rem; }
+
+.link-row + .link-row { border-top: 1px solid var(--border); }
