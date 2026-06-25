@@ -220,3 +220,37 @@ textarea { resize: vertical; margin: 10px 0; }
 .note-list li { margin-bottom: 4px; font-size: .92rem; }
 
 .link-row + .link-row { border-top: 1px solid var(--border); }
+
+/* ===== 시험 안내 ===== */
+.exam-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.exam-day { border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+.exam-date { font-weight: 700; font-size: .9rem; color: var(--blue); margin-bottom: 8px; }
+.exam-rows > div { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+.exam-rows .p-label { font-size: .78rem; color: var(--muted); }
+.exam-rows b { font-size: .95rem; }
+
+.all-grades { margin-top: 14px; }
+.all-grades summary {
+  cursor: pointer; font-size: .88rem; font-weight: 600; color: var(--blue);
+  padding: 8px 0; list-style: none;
+}
+.all-grades summary::-webkit-details-marker { display: none; }
+.all-grades summary::before { content: '▸ '; }
+.all-grades[open] summary::before { content: '▾ '; }
+.timetable th.hl, .timetable td.hl { background: var(--free-soft); }
+.timetable td.hl { font-weight: 700; color: #9a3412; }
+.timetable small { font-weight: 400; color: var(--muted); }
+
+.sched-seg { margin-bottom: 12px; }
+.mini-table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+.mini-table td { border: 1px solid var(--border); padding: 7px 9px; }
+.mini-table .t-time { text-align: center; white-space: nowrap; color: var(--text); width: 96px; }
+.mini-table .t-bell { text-align: center; color: var(--muted); width: 64px; }
+
+.warn-card { border: 1px solid #fecaca; background: #fef2f2; }
+.ban-text { margin: 0 0 8px; font-size: .92rem; }
+
+.ko-list { margin: 0; padding-left: 22px; }
+.ko-list li { margin-bottom: 7px; font-size: .92rem; }
+
+.menu-exam { border-left-color: #7c3aed; }
