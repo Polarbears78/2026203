@@ -1,7 +1,7 @@
 /* 서비스 워커
  * - HTML 문서와 data.json: 네트워크 우선(항상 최신), 오프라인 시 캐시로 폴백
  * - 그 외 정적 파일(css/js/이미지): 캐시 우선 */
-const CACHE = 'jayubok-v5';
+const CACHE = 'jayubok-v6';
 const ASSETS = [
   './',
   './index.html',
@@ -58,7 +58,7 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   const isHTML = e.request.mode === 'navigate' ||
     url.pathname.endsWith('/') || url.pathname.endsWith('.html');
-  const isData = url.pathname.endsWith('/data.json');
+  const isData = url.pathname.endsWith('/data.json') || url.pathname.endsWith('/menu.json');
 
   if (isHTML || isData) {
     e.respondWith(networkFirst(e.request));

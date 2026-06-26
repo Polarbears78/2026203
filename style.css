@@ -254,3 +254,21 @@ textarea { resize: vertical; margin: 10px 0; }
 .ko-list li { margin-bottom: 7px; font-size: .92rem; }
 
 .menu-exam { border-left-color: #7c3aed; }
+
+/* ===== 오늘의 급식 ===== */
+.meal-card {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  border: 1px solid #a7f3d0;
+}
+.meal-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; gap: 8px; }
+.meal-title { margin: 0; font-size: 1.1rem; font-weight: 800; color: #065f46; }
+.meal-date { font-size: .85rem; font-weight: 700; color: #047857; }
+.meal-dishes { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.meal-dishes li {
+  background: #fff; border: 1px solid #a7f3d0; color: #064e3b;
+  padding: 7px 12px; border-radius: 999px; font-size: .92rem; font-weight: 600;
+}
+.meal-dishes .meal-loading, .meal-dishes .meal-none {
+  background: transparent; border: 0; color: #047857; font-weight: 500; padding: 4px 0;
+}
+.meal-kcal { margin: 10px 0 0; font-size: .82rem; color: #047857; font-weight: 600; }

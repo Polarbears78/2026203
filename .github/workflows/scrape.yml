@@ -1,4 +1,4 @@
-name: Scrape free-dress dates & deploy
+name: Scrape data & deploy
 
 on:
   schedule:
@@ -29,16 +29,19 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Scrape school schedule
+      - name: Scrape free-dress dates
         run: node scripts/scrape.mjs
 
-      - name: Commit data.json if changed
+      - name: Fetch meal menu (NEIS)
+        run: node scripts/meal.mjs
+
+      - name: Commit data if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if ! git diff --quiet -- data.json; then
-            git add data.json
-            git commit -m "자유복 날짜 자동 업데이트 (data.json)"
+          git add data.json menu.json
+          if ! git diff --cached --quiet; then
+            git commit -m "자유복 날짜·급식 식단 자동 업데이트"
             git push
           else
             echo "변경 없음"

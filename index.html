@@ -21,6 +21,16 @@
   </header>
 
   <main class="container">
+    <!-- 오늘의 급식 -->
+    <section class="card meal-card" id="mealCard">
+      <div class="meal-head">
+        <h2 class="meal-title">🍚 오늘의 급식</h2>
+        <span class="meal-date" id="mealDate">—</span>
+      </div>
+      <ul class="meal-dishes" id="mealDishes"><li class="meal-loading">불러오는 중…</li></ul>
+      <p class="meal-kcal" id="mealKcal"></p>
+    </section>
+
     <p class="menu-lead">무엇을 확인할까요?</p>
 
     <a class="menu-card menu-weekly" href="weekly.html">
@@ -76,6 +86,47 @@
   </main>
 
   <script>
+    // 오늘의 급식 표시
+    (function () {
+      const pad = (n) => String(n).padStart(2, '0');
+      const t = new Date();
+      const todayISO = `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
+      const dishesEl = document.getElementById('mealDishes');
+      const dateEl = document.getElementById('mealDate');
+      const kcalEl = document.getElementById('mealKcal');
+
+      const fmt = (isoStr) => {
+        const [y, m, d] = isoStr.split('-').map(Number);
+        const wd = ['일', '월', '화', '수', '목', '금', '토'][new Date(y, m - 1, d).getDay()];
+        return `${m}월 ${d}일 (${wd})`;
+      };
+      const render = (meal, isToday) => {
+        dateEl.textContent = (isToday ? '' : '다음 급식 · ') + fmt(meal.date);
+        dishesEl.innerHTML = '';
+        meal.dishes.forEach((name) => {
+          const li = document.createElement('li');
+          li.textContent = name;
+          dishesEl.appendChild(li);
+        });
+        kcalEl.textContent = meal.kcal ? meal.kcal + ' kcal' : '';
+      };
+
+      fetch('menu.json', { cache: 'no-store' })
+        .then((r) => r.json())
+        .then((data) => {
+          const meals = (data.meals || []).filter((m) => m.type === '중식' || !m.type);
+          const today = meals.find((m) => m.date === todayISO);
+          if (today) { render(today, true); return; }
+          const next = meals.find((m) => m.date > todayISO);
+          if (next) { render(next, false); return; }
+          dateEl.textContent = todayISO ? fmt(todayISO) : '';
+          dishesEl.innerHTML = '<li class="meal-none">오늘은 급식이 없어요</li>';
+        })
+        .catch(() => {
+          dishesEl.innerHTML = '<li class="meal-none">급식 정보를 불러오지 못했어요</li>';
+        });
+    })();
+
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
     }
