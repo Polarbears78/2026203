@@ -1,7 +1,7 @@
 {
   "school": "육민관중학교",
   "source": "https://ymk.gwe.ms.kr/schedule/list.do?m=0203",
-  "updatedAt": "2026-06-28T21:56:48.825Z",
+  "updatedAt": "2026-06-29T22:05:10.274Z",
   "dates": [
     {
       "date": "2026-06-12",
@@ -9,6 +9,10 @@
     },
     {
       "date": "2026-06-26",
+      "title": "자유복 입는 날"
+    },
+    {
+      "date": "2026-07-10",
       "title": "자유복 입는 날"
     }
   ]
