@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>학교생활 소감 설문 — 2학년 3반</title>
+  <meta name="description" content="2026학년도 학교생활기록부 특기사항 기초 자료 설문지" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="소감 설문" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%8D%EF%B8%8F%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="back-link" href="index.html" aria-label="홈으로">‹ 홈</a>
+    <h1>✍️ 학교생활 소감 설문</h1>
+    <p class="subtitle">2026학년도 · 학교생활기록부 기초 자료</p>
+  </header>
+
+  <main class="container">
+    <section class="card intro-card">
+      <p class="intro">본 설문지는 담임 선생님이 여러분의 1년 동안의 학교생활을 <b>학교생활기록부</b>(행동특성 및 종합의견, 창의적 체험활동 등)에 구체적이고 의미 있게 기록하기 위한 기초 자료로 활용됩니다. 자신의 성장과 노력, 변화된 모습이 잘 드러날 수 있도록 <b>최대한 자세하고 솔직하게</b> 작성해 주세요.</p>
+      <p class="autosave-hint">✅ 작성 내용은 이 기기에 자동 저장됩니다. 다 쓰면 아래 <b>답변 복사하기</b>로 복사해 제출하세요.</p>
+    </section>
+
+    <form id="surveyForm" autocomplete="off">
+      <!-- 1. 기본 정보 -->
+      <section class="card">
+        <h2 class="card-title">1. 기본 정보</h2>
+        <div class="field">
+          <label for="sid">학번</label>
+          <input type="text" id="sid" inputmode="numeric" placeholder="예: 20301" />
+        </div>
+        <div class="field">
+          <label for="name">이름</label>
+          <input type="text" id="name" placeholder="이름을 입력하세요" />
+        </div>
+      </section>
+
+      <!-- 2. 학급 및 학교 활동 -->
+      <section class="card">
+        <h2 class="card-title">2. 학급 및 학교 활동</h2>
+        <div class="field">
+          <label for="role">1인 1역 및 학급 직책</label>
+          <p class="q-help">올 한 해 학급에서 맡은 역할(반장, 부반장, 1인 1역, 특별구역 청소 등)과 그 역할을 수행하며 배우거나 느낀 점을 구체적으로 적어주세요.</p>
+          <textarea id="role" rows="4"></textarea>
+        </div>
+        <div class="field">
+          <label for="event">학교 행사 참여</label>
+          <p class="q-help">체육대회, 축제, 수련회 등에서 주도적으로 참여했거나 기여한 부분이 있다면 적어주세요. (예: 응원 단장, 축제 부스 기획 등)</p>
+          <textarea id="event" rows="4"></textarea>
+        </div>
+        <div class="field">
+          <label for="study">학업 역량 및 노력</label>
+          <p class="q-help">가장 큰 성취를 이룬 과목, 또는 어려움을 극복하기 위해 특별히 노력한 과목과 그 과정(나만의 공부법 등)을 적어주세요.</p>
+          <textarea id="study" rows="4"></textarea>
+        </div>
+      </section>
+
+      <!-- 3. 진로 탐색 활동 -->
+      <section class="card">
+        <h2 class="card-title">3. 진로 탐색 활동</h2>
+        <div class="field">
+          <label for="career">현재 희망 진로</label>
+          <p class="q-help">구체적인 직업이나 관심 분야</p>
+          <textarea id="career" rows="2"></textarea>
+        </div>
+        <div class="field">
+          <label for="careerEffort">진로 탐색 노력</label>
+          <p class="q-help">꿈을 이루기 위해 올 한 해 학교 안팎에서 노력한 활동(독서, 진로 특강, 관련 동아리, 스스로 찾아본 탐구 활동 등)을 구체적으로 적어주세요.</p>
+          <textarea id="careerEffort" rows="4"></textarea>
+        </div>
+      </section>
+
+      <!-- 4. 인성 및 공동체 역량 -->
+      <section class="card">
+        <h2 class="card-title">4. 인성 및 공동체 역량</h2>
+        <div class="field">
+          <label for="prosCons">나의 장점과 단점</label>
+          <p class="q-help">자신의 가장 큰 장점은 무엇이며, 단점을 보완하기 위해 어떤 노력을 하고 있는지 적어주세요.</p>
+          <textarea id="prosCons" rows="4"></textarea>
+        </div>
+        <div class="field">
+          <label for="coop">배려 · 나눔 · 협력 · 갈등관리 경험</label>
+          <p class="q-help">친구들과 협력하여 좋은 결과를 얻었거나, 의견 충돌(갈등)을 지혜롭게 해결했던 구체적인 사례를 적어주세요.</p>
+          <textarea id="coop" rows="4"></textarea>
+        </div>
+        <div class="field">
+          <label for="growth">올해의 성장 포인트</label>
+          <p class="q-help">작년의 나와 비교했을 때, 올 한 해 가장 많이 발전하거나 긍정적으로 변화했다고 생각하는 부분은?</p>
+          <textarea id="growth" rows="4"></textarea>
+        </div>
+      </section>
+
+      <!-- 5. 기타 -->
+      <section class="card">
+        <h2 class="card-title">5. 기타 건의 및 하고 싶은 말</h2>
+        <div class="field">
+          <p class="q-help">생기부에 꼭 반영되었으면 하는 특별한 경험·활동, 또는 선생님께 하고 싶은 말이 있다면 자유롭게 적어주세요.</p>
+          <textarea id="etc" rows="4"></textarea>
+        </div>
+      </section>
+    </form>
+
+    <p class="save-status" id="saveStatus"></p>
+
+    <div class="action-bar">
+      <button class="btn btn-block" id="copyBtn">📋 답변 복사하기</button>
+      <button class="btn btn-block btn-kakao" id="kakaoBtn">💬 카톡으로 제출 (복사 후 채팅방 열기)</button>
+      <button class="link-btn" id="resetBtn">작성 내용 초기화</button>
+    </div>
+  </main>
+
+  <script>
+    const KAKAO_URL = 'https://open.kakao.com/o/gIts53ui';
+    const STORAGE_KEY = 'survey-2026';
+    const FIELDS = [
+      { id: 'sid', label: '학번' },
+      { id: 'name', label: '이름' },
+      { id: 'role', label: '1인 1역 및 학급 직책' },
+      { id: 'event', label: '학교 행사 참여' },
+      { id: 'study', label: '학업 역량 및 노력' },
+      { id: 'career', label: '현재 희망 진로' },
+      { id: 'careerEffort', label: '진로 탐색 노력' },
+      { id: 'prosCons', label: '나의 장점과 단점' },
+      { id: 'coop', label: '배려·나눔·협력·갈등관리 경험' },
+      { id: 'growth', label: '올해의 성장 포인트' },
+      { id: 'etc', label: '기타 하고 싶은 말' },
+    ];
+
+    // 불러오기
+    function load() {
+      let saved = {};
+      try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch {}
+      FIELDS.forEach((f) => { if (saved[f.id] != null) document.getElementById(f.id).value = saved[f.id]; });
+    }
+    // 저장
+    let saveTimer;
+    function save() {
+      const data = {};
+      FIELDS.forEach((f) => { data[f.id] = document.getElementById(f.id).value; });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      const s = document.getElementById('saveStatus');
+      s.textContent = '자동 저장됨 ✓';
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => { s.textContent = ''; }, 1500);
+    }
+
+    // 답변 텍스트 생성
+    function buildText() {
+      const get = (id) => document.getElementById(id).value.trim();
+      let out = '[2026학년도 학교생활 소감 설문]\n';
+      out += `학번: ${get('sid')}\n이름: ${get('name')}\n`;
+      const sections = FIELDS.filter((f) => f.id !== 'sid' && f.id !== 'name');
+      sections.forEach((f) => {
+        out += `\n■ ${f.label}\n${get(f.id) || '-'}\n`;
+      });
+      return out;
+    }
+
+    async function copyText() {
+      const text = buildText();
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        let ok = false;
+        try { ok = document.execCommand('copy'); } catch {}
+        document.body.removeChild(ta);
+        return ok;
+      }
+    }
+
+    // 이벤트
+    document.getElementById('surveyForm').addEventListener('input', save);
+
+    document.getElementById('copyBtn').addEventListener('click', async () => {
+      if (!document.getElementById('name').value.trim() || !document.getElementById('sid').value.trim()) {
+        alert('학번과 이름을 먼저 입력해 주세요.');
+        return;
+      }
+      const ok = await copyText();
+      alert(ok ? '답변이 복사되었어요! 제출할 곳에 붙여넣기 하세요.' : '복사에 실패했어요. 내용을 길게 눌러 직접 복사해 주세요.');
+    });
+
+    document.getElementById('kakaoBtn').addEventListener('click', async () => {
+      if (!document.getElementById('name').value.trim() || !document.getElementById('sid').value.trim()) {
+        alert('학번과 이름을 먼저 입력해 주세요.');
+        return;
+      }
+      await copyText();
+      alert('답변을 복사했어요! 채팅방이 열리면 붙여넣기(길게 눌러 붙여넣기) 하여 제출하세요.');
+      window.open(KAKAO_URL, '_blank', 'noopener');
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      if (confirm('작성한 내용을 모두 지울까요?')) {
+        localStorage.removeItem(STORAGE_KEY);
+        FIELDS.forEach((f) => { document.getElementById(f.id).value = ''; });
+      }
+    });
+
+    load();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>
