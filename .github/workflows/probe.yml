@@ -10,13 +10,10 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Test POST to Apps Script
+      - name: Test POST (browser-like, follow 302 as GET)
         run: |
           URL="https://script.google.com/macros/s/AKfycbzewxbmqadjJsrXZxfaMGCWBDS3QOQ2sH2afDfIdoQjWePUaXbuQcEcXnQQijaw9U6p/exec"
-          echo "--- GET ---"
-          curl -sS -L -m 30 "$URL" -w "\nHTTP %{http_code}\n" | tail -5
-          echo "--- POST (test row) ---"
-          curl -sS -L -m 30 -X POST "$URL" \
+          curl -sS -L -m 30 \
             -H "Content-Type: text/plain;charset=utf-8" \
-            -d '{"sid":"00000","name":"연결테스트(삭제해도 됨)","role":"자동저장 연결 확인","event":"","study":"","career":"","careerEffort":"","prosCons":"","coop":"","growth":"","etc":"GitHub Actions 테스트 제출"}' \
-            -w "\nHTTP %{http_code}\n" | tail -8
+            --data '{"sid":"00000","name":"연결테스트(삭제해도 됨)","role":"자동저장 연결 확인","event":"","study":"","career":"","careerEffort":"","prosCons":"","coop":"","growth":"","etc":"GitHub Actions 정상 테스트"}' \
+            "$URL" -w "\nHTTP %{http_code}\n" | tail -6
