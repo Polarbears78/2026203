@@ -291,3 +291,7 @@ textarea { resize: vertical; margin: 10px 0; }
 .btn-kakao { background: #fee500; color: #191600; }
 .btn-kakao:active { background: #f5dc00; }
 .menu-survey { border-left-color: #16a34a; }
+
+.btn-submit { background: #16a34a; }
+.btn-submit:active { background: #15803d; }
+.btn-submit:disabled { opacity: .6; }

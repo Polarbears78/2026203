@@ -108,13 +108,17 @@
     <p class="save-status" id="saveStatus"></p>
 
     <div class="action-bar">
-      <button class="btn btn-block" id="copyBtn">📋 답변 복사하기</button>
-      <button class="btn btn-block btn-kakao" id="kakaoBtn">💬 카톡으로 제출 (복사 후 채팅방 열기)</button>
+      <button class="btn btn-block btn-submit" id="submitBtn">✅ 제출하기</button>
+      <button class="btn btn-block btn-outline" id="copyBtn">📋 답변 복사하기</button>
       <button class="link-btn" id="resetBtn">작성 내용 초기화</button>
     </div>
   </main>
 
   <script>
+    // ▼▼▼ 구글 시트 자동 저장: 아래에 Apps Script 웹앱 URL을 넣으세요 (설정 방법은 SHEET_SETUP.md 참고) ▼▼▼
+    const SHEET_ENDPOINT = '';
+    // ▲▲▲ 비워두면 '제출하기'는 답변을 복사해 직접 전달하는 방식으로 동작합니다 ▲▲▲
+
     const KAKAO_URL = 'https://open.kakao.com/o/gIts53ui';
     const STORAGE_KEY = 'survey-2026';
     const FIELDS = [
@@ -176,26 +180,59 @@
       }
     }
 
+    function collect() {
+      const data = {};
+      FIELDS.forEach((f) => { data[f.id] = document.getElementById(f.id).value.trim(); });
+      return data;
+    }
+    function validRequired() {
+      if (!document.getElementById('sid').value.trim() || !document.getElementById('name').value.trim()) {
+        alert('학번과 이름을 먼저 입력해 주세요.');
+        return false;
+      }
+      return true;
+    }
+
     // 이벤트
     document.getElementById('surveyForm').addEventListener('input', save);
 
     document.getElementById('copyBtn').addEventListener('click', async () => {
-      if (!document.getElementById('name').value.trim() || !document.getElementById('sid').value.trim()) {
-        alert('학번과 이름을 먼저 입력해 주세요.');
-        return;
-      }
+      if (!validRequired()) return;
       const ok = await copyText();
       alert(ok ? '답변이 복사되었어요! 제출할 곳에 붙여넣기 하세요.' : '복사에 실패했어요. 내용을 길게 눌러 직접 복사해 주세요.');
     });
 
-    document.getElementById('kakaoBtn').addEventListener('click', async () => {
-      if (!document.getElementById('name').value.trim() || !document.getElementById('sid').value.trim()) {
-        alert('학번과 이름을 먼저 입력해 주세요.');
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.addEventListener('click', async () => {
+      if (!validRequired()) return;
+
+      // 시트 연동이 설정되지 않은 경우: 복사 방식으로 대체
+      if (!SHEET_ENDPOINT) {
+        await copyText();
+        alert('아직 온라인 제출이 설정되지 않았어요.\n답변을 복사했으니 선생님께 전달해 주세요.');
         return;
       }
-      await copyText();
-      alert('답변을 복사했어요! 채팅방이 열리면 붙여넣기(길게 눌러 붙여넣기) 하여 제출하세요.');
-      window.open(KAKAO_URL, '_blank', 'noopener');
+
+      const original = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = '제출 중…';
+      try {
+        await fetch(SHEET_ENDPOINT, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(collect()),
+        });
+        submitBtn.textContent = '제출 완료 ✓';
+        alert('제출 완료! 소중한 답변 고마워요 😊');
+      } catch (e) {
+        await copyText();
+        alert('제출 중 문제가 생겼어요. 답변을 복사했으니 카톡 등으로 전달해 주세요.');
+        submitBtn.textContent = original;
+      } finally {
+        submitBtn.disabled = false;
+        setTimeout(() => { submitBtn.textContent = original; }, 4000);
+      }
     });
 
     document.getElementById('resetBtn').addEventListener('click', () => {
