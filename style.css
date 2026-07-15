@@ -295,3 +295,13 @@ textarea { resize: vertical; margin: 10px 0; }
 .btn-submit { background: #16a34a; }
 .btn-submit:active { background: #15803d; }
 .btn-submit:disabled { opacity: .6; }
+
+/* ===== 학습 기록 ===== */
+.opt { font-weight: 500; color: var(--muted); font-size: .82rem; }
+.unit { font-weight: 500; color: var(--muted); font-size: .82rem; }
+.log-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.log-grid .field { margin-bottom: 0; }
+.field select { width: 100%; padding: 11px 12px; border: 1px solid var(--border); border-radius: 12px; font: inherit; background: #fff; }
+.field input[type="number"] { width: 100%; padding: 11px 12px; border: 1px solid var(--border); border-radius: 12px; font: inherit; }
+.field input[type="date"] { width: 100%; }
+.menu-study { border-left-color: #16a34a; }

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>방학 학습 기록 — 2학년 3반</title>
+  <meta name="description" content="매일 국어·수학·영어 학습량을 기록하는 페이지" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="학습 기록" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%9A%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="back-link" href="index.html" aria-label="홈으로">‹ 홈</a>
+    <h1>📚 방학 학습 기록</h1>
+    <p class="subtitle">2학년 3반 · 매일 기록</p>
+  </header>
+
+  <main class="container">
+    <section class="card intro-card">
+      <p class="intro">매일 공부한 양을 기록해요. <b>번호를 고르고</b> 오늘 푼 <b>국어·수학·영어 문항 수</b>와 <b>영어 단어 암기 수</b>를 입력한 뒤 <b>기록하기</b>를 누르세요. 하루에 한 번, 방학 동안 매일! 💪</p>
+    </section>
+
+    <form id="logForm" autocomplete="off">
+      <section class="card">
+        <div class="field">
+          <label for="num">번호</label>
+          <select id="num"><option value="">번호를 선택하세요</option></select>
+        </div>
+        <div class="field">
+          <label for="name">이름 <span class="opt">(선택)</span></label>
+          <input type="text" id="name" placeholder="이름 (선택 입력)" />
+        </div>
+        <div class="field">
+          <label for="date">날짜</label>
+          <input type="date" id="date" />
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="card-title">오늘의 학습량</h2>
+        <div class="log-grid">
+          <div class="field">
+            <label for="kor">국어 <span class="unit">푼 문항 수</span></label>
+            <input type="number" id="kor" inputmode="numeric" min="0" placeholder="0" />
+          </div>
+          <div class="field">
+            <label for="math">수학 <span class="unit">푼 문항 수</span></label>
+            <input type="number" id="math" inputmode="numeric" min="0" placeholder="0" />
+          </div>
+          <div class="field">
+            <label for="eng">영어 <span class="unit">푼 문항 수</span></label>
+            <input type="number" id="eng" inputmode="numeric" min="0" placeholder="0" />
+          </div>
+          <div class="field">
+            <label for="word">영어 단어 <span class="unit">암기 수</span></label>
+            <input type="number" id="word" inputmode="numeric" min="0" placeholder="0" />
+          </div>
+        </div>
+      </section>
+    </form>
+
+    <p class="save-status" id="status"></p>
+
+    <div class="action-bar">
+      <button class="btn btn-block btn-submit" id="submitBtn">✅ 오늘 기록하기</button>
+    </div>
+  </main>
+
+  <script>
+    const SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzewxbmqadjJsrXZxfaMGCWBDS3QOQ2sH2afDfIdoQjWePUaXbuQcEcXnQQijaw9U6p/exec';
+    const NUM_KEY = 'studylog-id';
+
+    // 번호 1~28
+    const numSel = document.getElementById('num');
+    for (let i = 1; i <= 28; i++) {
+      const o = document.createElement('option');
+      o.value = i; o.textContent = i + '번';
+      numSel.appendChild(o);
+    }
+
+    // 오늘 날짜 기본값
+    const pad = (n) => String(n).padStart(2, '0');
+    const t = new Date();
+    document.getElementById('date').value = `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
+
+    // 번호·이름 기억
+    try {
+      const saved = JSON.parse(localStorage.getItem(NUM_KEY)) || {};
+      if (saved.num) numSel.value = saved.num;
+      if (saved.name) document.getElementById('name').value = saved.name;
+    } catch {}
+    function remember() {
+      localStorage.setItem(NUM_KEY, JSON.stringify({
+        num: numSel.value, name: document.getElementById('name').value,
+      }));
+    }
+    numSel.addEventListener('change', remember);
+    document.getElementById('name').addEventListener('input', remember);
+
+    const submitBtn = document.getElementById('submitBtn');
+    const status = document.getElementById('status');
+
+    submitBtn.addEventListener('click', async () => {
+      const num = numSel.value;
+      if (!num) { alert('번호를 선택해 주세요.'); return; }
+      const g = (id) => document.getElementById(id).value.trim();
+      const payload = {
+        type: 'study',
+        date: g('date'),
+        num: num,
+        name: g('name'),
+        kor: g('kor') || '0',
+        math: g('math') || '0',
+        eng: g('eng') || '0',
+        word: g('word') || '0',
+      };
+
+      const original = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = '기록 중…';
+      status.textContent = '';
+      try {
+        await fetch(SHEET_ENDPOINT, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload),
+        });
+        status.textContent = '✓ ' + payload.date + ' 기록 완료! 내일도 화이팅 💪';
+        submitBtn.textContent = '기록 완료 ✓';
+        // 입력값(수치)만 비우고 번호·이름·날짜는 유지
+        ['kor', 'math', 'eng', 'word'].forEach((id) => { document.getElementById(id).value = ''; });
+      } catch (e) {
+        status.textContent = '⚠ 전송에 실패했어요. 인터넷 확인 후 다시 눌러 주세요.';
+        submitBtn.textContent = original;
+      } finally {
+        submitBtn.disabled = false;
+        setTimeout(() => { submitBtn.textContent = original; }, 4000);
+      }
+    });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>
