@@ -1,194 +1,280 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#2563eb" />
-  <title>방학 학습 기록 통계 — 2학년 3반</title>
-  <meta name="description" content="방학 학습 기록 번호별 통계 표" />
-  <link rel="stylesheet" href="style.css" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8A%3C/text%3E%3C/svg%3E" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>방학 학습 기록 통계 — 2학년 3반</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8A%3C/text%3E%3C/svg%3E" />
+<style>
+  :root{
+    --blue:#2563eb; --green:#16a34a; --orange:#f97316; --violet:#7c3aed;
+    --bg:#f1f5f9; --card:#fff; --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.5;
+  }
+  header{ background:linear-gradient(135deg,#2563eb,#4f46e5); color:#fff; padding:20px 16px; text-align:center; }
+  header h1{ font-size:1.4rem; font-weight:800; }
+  header p{ opacity:.9; font-size:.88rem; margin-top:2px; }
+  main{ max-width:720px; margin:0 auto; padding:16px 14px 48px; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:14px;
+    box-shadow:0 1px 3px rgba(15,23,42,.06); }
+  .card h2{ font-size:1rem; font-weight:800; margin-bottom:12px; }
+  .summary{ display:flex; gap:10px; text-align:center; }
+  .summary .it{ flex:1; padding:6px 0; }
+  .summary .n{ font-size:1.7rem; font-weight:900; color:var(--blue); letter-spacing:-.5px; }
+  .summary .l{ font-size:.78rem; color:var(--muted); font-weight:600; }
+  .status{ color:var(--muted); font-size:.9rem; text-align:center; padding:14px 0; }
+  .chart-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .chart-scroll svg{ display:block; }
+  .legend{ display:flex; flex-wrap:wrap; gap:12px; margin-top:10px; font-size:.8rem; color:var(--muted); }
+  .legend span{ display:inline-flex; align-items:center; gap:5px; }
+  .legend i{ width:11px; height:11px; border-radius:3px; display:inline-block; }
+  .chead{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px; }
+  .chead h2{ margin:0; }
+  .sort{ display:flex; gap:6px; }
+  .sort button{ border:1px solid var(--line); background:#fff; color:var(--muted); border-radius:999px;
+    padding:6px 12px; font-size:.8rem; font-weight:700; cursor:pointer; font-family:inherit; }
+  .sort button.on{ background:var(--blue); border-color:var(--blue); color:#fff; }
+  .twrap{ overflow-x:auto; }
+  table{ border-collapse:collapse; width:100%; min-width:460px; font-size:.88rem; }
+  th,td{ border:1px solid var(--line); padding:8px 6px; text-align:center; white-space:nowrap; }
+  thead th{ background:var(--blue); color:#fff; }
+  td.num{ font-weight:700; color:var(--blue); } td.name{ text-align:left; } td.tot{ font-weight:800; background:#eff6ff; }
+  tbody tr:nth-child(even){ background:#f8fafc; }
+  tfoot th{ background:var(--bg); }
+  .btn{ display:block; width:100%; text-align:center; border:1.5px solid var(--blue); background:#fff; color:var(--blue);
+    font-weight:700; padding:11px; border-radius:12px; cursor:pointer; font-family:inherit; font-size:.95rem; margin-top:12px; }
+  .btn:active{ background:#eff6ff; }
+  .note{ font-size:.82rem; color:var(--muted); margin-top:10px; }
+  .back{ display:inline-block; color:#fff; text-decoration:none; font-size:.85rem; font-weight:600; opacity:.9; }
+  .foot{ text-align:center; color:var(--muted); font-size:.8rem; margin-top:8px; }
+</style>
 </head>
 <body>
-  <header class="topbar">
-    <a class="back-link" href="index.html" aria-label="홈으로">‹ 홈</a>
-    <h1>📊 학습 기록 통계</h1>
-    <p class="subtitle">2학년 3반 · 방학 학습</p>
-  </header>
+<header>
+  <div style="max-width:720px;margin:0 auto;text-align:left"><a class="back" href="index.html">‹ 홈</a></div>
+  <h1>📊 방학 학습 기록 통계</h1>
+  <p>2학년 3반</p>
+</header>
 
-  <main class="container">
-    <section class="card summary-card" id="summaryCard">
-      <div class="sum-item"><span class="sum-num" id="sumStudents">—</span><span class="sum-label">참여 학생</span></div>
-      <div class="sum-item"><span class="sum-num" id="sumRecords">—</span><span class="sum-label">총 기록 수</span></div>
-      <div class="sum-item"><span class="sum-num" id="sumDays">—</span><span class="sum-label">기록 기간(일)</span></div>
+<main>
+  <section class="card">
+    <div class="summary">
+      <div class="it"><div class="n" id="sStudents">—</div><div class="l">참여 학생</div></div>
+      <div class="it"><div class="n" id="sRecords">—</div><div class="l">총 기록 수</div></div>
+      <div class="it"><div class="n" id="sDays">—</div><div class="l">기록 기간(일)</div></div>
+    </div>
+    <p class="note" id="periodNote" style="text-align:center"></p>
+  </section>
+
+  <p class="status" id="status">불러오는 중…</p>
+
+  <div id="content" hidden>
+    <section class="card">
+      <h2>번호별 총문항 수</h2>
+      <div class="chart-scroll"><svg id="chartNum" width="100%" role="img" aria-label="번호별 총문항 막대그래프"></svg></div>
+      <p class="note">막대 높이 = 국어+수학+영어 푼 문항 수 합계</p>
     </section>
 
     <section class="card">
-      <div class="stats-head">
-        <h2 class="card-title" style="margin:0">번호별 합계</h2>
-        <div class="sort-toggle">
-          <button class="sort-btn active" data-sort="num">번호순</button>
-          <button class="sort-btn" data-sort="total">총문항순</button>
+      <h2>일별 전체 학습량 추이</h2>
+      <div class="chart-scroll"><svg id="chartDay" width="100%" role="img" aria-label="일별 학습량 추이"></svg></div>
+      <p class="note">반 전체가 그 날 푼 총문항 수의 합</p>
+    </section>
+
+    <section class="card">
+      <h2>과목별 합계</h2>
+      <div class="chart-scroll"><svg id="chartSubj" width="100%" role="img" aria-label="과목별 합계"></svg></div>
+      <div class="legend">
+        <span><i style="background:var(--blue)"></i>국어</span>
+        <span><i style="background:var(--green)"></i>수학</span>
+        <span><i style="background:var(--orange)"></i>영어</span>
+        <span><i style="background:var(--violet)"></i>영단어</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="chead">
+        <h2>번호별 합계 표</h2>
+        <div class="sort">
+          <button class="on" data-sort="num">번호순</button>
+          <button data-sort="total">총문항순</button>
         </div>
       </div>
-      <p class="status" id="status">불러오는 중…</p>
-      <div class="table-wrap">
-        <table class="stats-table" id="statsTable" hidden>
-          <thead>
-            <tr>
-              <th>번호</th><th>이름</th><th>일수</th>
-              <th>국어</th><th>수학</th><th>영어</th><th>영단어</th><th>총문항</th>
-            </tr>
-          </thead>
-          <tbody id="statsBody"></tbody>
-          <tfoot id="statsFoot"></tfoot>
+      <div class="twrap">
+        <table>
+          <thead><tr><th>번호</th><th>이름</th><th>일수</th><th>국어</th><th>수학</th><th>영어</th><th>영단어</th><th>총문항</th></tr></thead>
+          <tbody id="tbody"></tbody>
+          <tfoot id="tfoot"></tfoot>
         </table>
       </div>
-      <p class="note" id="updatedNote"></p>
-      <button class="btn btn-block btn-outline" id="refreshBtn" style="margin-top:12px">🔄 새로고침</button>
     </section>
+  </div>
 
-    <section class="card">
-      <p class="help small">국어·수학·영어는 <b>푼 문항 수</b>, 영단어는 <b>암기 수</b>의 합계입니다. ‘총문항’은 국어+수학+영어 문항 수 합계입니다. 학생이 <b>방학 학습 기록</b>에서 제출한 자료를 실시간으로 집계합니다.</p>
-    </section>
+  <button class="btn" id="refresh">🔄 새로고침</button>
+  <p class="foot">육민관중학교 2학년 3반 · 교사용</p>
+</main>
 
-    <footer class="foot"><span>육민관중학교 2학년 3반</span></footer>
-  </main>
+<script>
+  const ENDPOINT = 'https://script.google.com/macros/s/AKfycbzJDuuzjIWGSi4uM68DNyy3_zKCYJuSZgnREx0E0Bag5Yv9rPZnYKFxLiB4MgdxnF_G/exec';
+  const $ = (id) => document.getElementById(id);
+  let rows = [], sortMode = 'num', timer = null;
 
-  <script>
-    const ENDPOINT = 'https://script.google.com/macros/s/AKfycbzJDuuzjIWGSi4uM68DNyy3_zKCYJuSZgnREx0E0Bag5Yv9rPZnYKFxLiB4MgdxnF_G/exec';
-    let rows = [];
-    let sortMode = 'num';
+  function load() {
+    $('status').style.display = 'block';
+    $('status').textContent = '불러오는 중…';
+    $('content').hidden = true;
+    const old = $('jsonp'); if (old) old.remove();
+    timer = setTimeout(() => {
+      $('status').textContent = '데이터를 불러오지 못했어요. 새로고침하거나 스크립트 재배포 상태를 확인해 주세요.';
+    }, 12000);
+    const s = document.createElement('script');
+    s.id = 'jsonp';
+    s.src = ENDPOINT + '?action=studyStats&callback=onStudyData&_=' + String(performance.now()).replace('.', '');
+    s.onerror = () => { clearTimeout(timer); $('status').textContent = '엔드포인트에 연결하지 못했어요.'; };
+    document.body.appendChild(s);
+  }
+  window.onStudyData = (data) => {
+    clearTimeout(timer);
+    if (!data || !data.ok) { $('status').textContent = '데이터를 읽지 못했어요' + (data && data.message ? ' (' + data.message + ')' : '') + '.'; return; }
+    rows = data.rows || [];
+    render();
+  };
 
-    const $ = (id) => document.getElementById(id);
+  function normDate(s) {
+    if (!s) return '';
+    const str = String(s);
+    if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(0, 10);
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    return str;
+  }
+  function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function num(v) { return Number(v) || 0; }
 
-    function load() {
-      $('status').textContent = '불러오는 중…';
-      $('status').style.display = 'block';
-      $('statsTable').hidden = true;
-
-      // 이전 콜백/스크립트 정리
-      const old = document.getElementById('jsonp');
-      if (old) old.remove();
-
-      // 타임아웃(응답 없을 때)
-      window._to = setTimeout(() => {
-        $('status').textContent = '데이터를 불러오지 못했어요. 새로고침하거나, 스크립트가 통계 읽기용으로 재배포됐는지 확인해 주세요.';
-      }, 12000);
-
-      const s = document.createElement('script');
-      s.id = 'jsonp';
-      // 캐시 방지용 파라미터
-      const bust = String(performance.now()).replace('.', '');
-      s.src = ENDPOINT + '?action=studyStats&callback=onStudyData&_=' + bust;
-      s.onerror = () => {
-        clearTimeout(window._to);
-        $('status').textContent = '엔드포인트에 연결하지 못했어요. 주소와 재배포 상태를 확인해 주세요.';
-      };
-      document.body.appendChild(s);
-    }
-
-    window.onStudyData = function (data) {
-      clearTimeout(window._to);
-      if (!data || !data.ok) {
-        $('status').textContent = '데이터를 읽지 못했어요' + (data && data.message ? ' (' + data.message + ')' : '') + '.';
-        return;
+  function aggregate() {
+    const byNum = new Map(), byDate = new Map(), allDates = new Set();
+    const subj = { kor: 0, math: 0, eng: 0, word: 0 };
+    rows.forEach((r) => {
+      const k = String(r.num);
+      if (!byNum.has(k)) byNum.set(k, { num: r.num, name: '', days: new Set(), kor: 0, math: 0, eng: 0, word: 0 });
+      const a = byNum.get(k);
+      if (r.name) a.name = r.name;
+      const kor = num(r.kor), math = num(r.math), eng = num(r.eng), word = num(r.word);
+      a.kor += kor; a.math += math; a.eng += eng; a.word += word;
+      subj.kor += kor; subj.math += math; subj.eng += eng; subj.word += word;
+      const d = normDate(r.date);
+      if (d) {
+        a.days.add(d); allDates.add(d);
+        byDate.set(d, (byDate.get(d) || 0) + kor + math + eng);
       }
-      rows = data.rows || [];
-      render();
-    };
-
-    function aggregate() {
-      const map = new Map(); // num -> agg
-      const allDates = new Set();
-      rows.forEach((r) => {
-        const num = String(r.num);
-        if (!map.has(num)) map.set(num, { num, name: '', days: new Set(), kor: 0, math: 0, eng: 0, word: 0 });
-        const a = map.get(num);
-        if (r.name) a.name = r.name;
-        const dnorm = normDate(r.date);
-        if (dnorm) { a.days.add(dnorm); allDates.add(dnorm); }
-        a.kor += Number(r.kor) || 0;
-        a.math += Number(r.math) || 0;
-        a.eng += Number(r.eng) || 0;
-        a.word += Number(r.word) || 0;
-      });
-      const list = [...map.values()].map((a) => ({
-        num: a.num, name: a.name, days: a.days.size,
-        kor: a.kor, math: a.math, eng: a.eng, word: a.word,
-        total: a.kor + a.math + a.eng,
-      }));
-      return { list, allDates };
-    }
-
-    function render() {
-      const { list, allDates } = aggregate();
-
-      $('sumStudents').textContent = list.length;
-      $('sumRecords').textContent = rows.length;
-      $('sumDays').textContent = allDates.size;
-
-      // 정렬
-      list.sort((a, b) => sortMode === 'total'
-        ? b.total - a.total || (Number(a.num) - Number(b.num))
-        : (Number(a.num) - Number(b.num)));
-
-      const body = $('statsBody');
-      body.innerHTML = '';
-      if (list.length === 0) {
-        $('status').textContent = '아직 제출된 기록이 없어요.';
-        $('statsTable').hidden = true;
-        $('updatedNote').textContent = '';
-        return;
-      }
-      const tot = { days: 0, kor: 0, math: 0, eng: 0, word: 0, total: 0 };
-      list.forEach((a) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML =
-          `<td class="c-num">${a.num}</td><td class="c-name">${escapeHtml(a.name || '-')}</td>` +
-          `<td>${a.days}</td><td>${a.kor}</td><td>${a.math}</td><td>${a.eng}</td><td>${a.word}</td>` +
-          `<td class="c-total">${a.total}</td>`;
-        body.appendChild(tr);
-        tot.kor += a.kor; tot.math += a.math; tot.eng += a.eng; tot.word += a.word; tot.total += a.total;
-      });
-      $('statsFoot').innerHTML =
-        `<tr><th colspan="3">합계</th><th>${tot.kor}</th><th>${tot.math}</th><th>${tot.eng}</th><th>${tot.word}</th><th>${tot.total}</th></tr>`;
-
-      $('status').style.display = 'none';
-      $('statsTable').hidden = false;
-
-      const dts = [...allDates].sort();
-      $('updatedNote').textContent = dts.length
-        ? `기록 기간: ${dts[0]} ~ ${dts[dts.length - 1]}`
-        : '';
-    }
-
-    function normDate(s) {
-      if (!s) return '';
-      const str = String(s);
-      if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(0, 10);
-      const d = new Date(str);
-      if (!isNaN(d.getTime())) {
-        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-      }
-      return str;
-    }
-
-    function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    }
-
-    document.querySelectorAll('.sort-btn').forEach((b) => {
-      b.addEventListener('click', () => {
-        document.querySelectorAll('.sort-btn').forEach((x) => x.classList.remove('active'));
-        b.classList.add('active');
-        sortMode = b.dataset.sort;
-        if (rows.length) render();
-      });
     });
-    $('refreshBtn').addEventListener('click', load);
+    const list = [...byNum.values()].map((a) => ({
+      num: a.num, name: a.name, days: a.days.size,
+      kor: a.kor, math: a.math, eng: a.eng, word: a.word, total: a.kor + a.math + a.eng,
+    }));
+    const daily = [...byDate.entries()].map(([date, total]) => ({ date, total })).sort((x, y) => x.date.localeCompare(y.date));
+    return { list, daily, allDates, subj };
+  }
 
-    load();
-  </script>
+  // ── SVG helpers ──
+  function svgEl(el, w, h) { el.setAttribute('viewBox', `0 0 ${w} ${h}`); el.setAttribute('height', h > 0 ? h : 1); }
+
+  function barChart(el, items, opt) {
+    const H = 200, padT = 18, padB = 30, padL = 34, padR = 8;
+    const n = items.length;
+    if (!n) { el.innerHTML = ''; svgEl(el, 300, 60); el.innerHTML = '<text x="150" y="34" font-size="12" fill="#64748b" text-anchor="middle">데이터 없음</text>'; return; }
+    const step = Math.max(16, Math.min(48, 560 / n));
+    const W = padL + padR + step * n;
+    const max = Math.max(1, ...items.map((d) => d.value));
+    const y = (v) => padT + (H - padT - padB) * (1 - v / max);
+    let s = '';
+    for (let g = 0; g <= 4; g++) {
+      const gv = max * g / 4, gy = y(gv);
+      s += `<line x1="${padL}" x2="${W - padR}" y1="${gy}" y2="${gy}" stroke="#e2e8f0" stroke-width="1"/>`;
+      s += `<text x="${padL - 5}" y="${gy + 3}" font-size="8" fill="#94a3b8" text-anchor="end">${Math.round(gv)}</text>`;
+    }
+    items.forEach((d, i) => {
+      const bw = step * 0.62, x = padL + step * i + (step - bw) / 2, yy = y(d.value), h = (H - padB) - yy;
+      s += `<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0, h).toFixed(1)}" rx="2" fill="${opt.color || '#2563eb'}"/>`;
+      s += `<text x="${(x + bw / 2).toFixed(1)}" y="${H - padB + 12}" font-size="9" fill="#64748b" text-anchor="middle">${esc(d.label)}</text>`;
+      if (step >= 24 && d.value > 0) s += `<text x="${(x + bw / 2).toFixed(1)}" y="${(yy - 3).toFixed(1)}" font-size="8" fill="#334155" text-anchor="middle">${d.value}</text>`;
+    });
+    svgEl(el, W, H); el.innerHTML = s;
+  }
+
+  function lineChart(el, items) {
+    const H = 200, padT = 18, padB = 34, padL = 34, padR = 12;
+    const n = items.length;
+    if (!n) { svgEl(el, 300, 60); el.innerHTML = '<text x="150" y="34" font-size="12" fill="#64748b" text-anchor="middle">데이터 없음</text>'; return; }
+    const step = n === 1 ? 0 : Math.max(28, Math.min(90, 560 / (n - 1)));
+    const W = padL + padR + (n === 1 ? 60 : step * (n - 1));
+    const max = Math.max(1, ...items.map((d) => d.total));
+    const x = (i) => padL + (n === 1 ? 30 : step * i);
+    const y = (v) => padT + (H - padT - padB) * (1 - v / max);
+    let s = '';
+    for (let g = 0; g <= 4; g++) {
+      const gv = max * g / 4, gy = y(gv);
+      s += `<line x1="${padL}" x2="${W - padR}" y1="${gy}" y2="${gy}" stroke="#e2e8f0" stroke-width="1"/>`;
+      s += `<text x="${padL - 5}" y="${gy + 3}" font-size="8" fill="#94a3b8" text-anchor="end">${Math.round(gv)}</text>`;
+    }
+    const pts = items.map((d, i) => [x(i), y(d.total)]);
+    s += `<polyline points="${pts.map((p) => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ')}" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>`;
+    items.forEach((d, i) => {
+      s += `<circle cx="${x(i).toFixed(1)}" cy="${y(d.total).toFixed(1)}" r="3.5" fill="#2563eb"/>`;
+      const md = d.date.slice(5).replace('-', '/');
+      s += `<text x="${x(i).toFixed(1)}" y="${H - padB + 13}" font-size="8" fill="#64748b" text-anchor="middle">${md}</text>`;
+      s += `<text x="${x(i).toFixed(1)}" y="${(y(d.total) - 6).toFixed(1)}" font-size="8" fill="#334155" text-anchor="middle">${d.total}</text>`;
+    });
+    svgEl(el, W, H); el.innerHTML = s;
+  }
+
+  function render() {
+    const { list, daily, allDates, subj } = aggregate();
+    $('sStudents').textContent = list.length;
+    $('sRecords').textContent = rows.length;
+    $('sDays').textContent = allDates.size;
+    const dts = [...allDates].sort();
+    $('periodNote').textContent = dts.length ? `기록 기간: ${dts[0]} ~ ${dts[dts.length - 1]}` : '';
+
+    if (list.length === 0) { $('status').textContent = '아직 제출된 기록이 없어요.'; $('content').hidden = true; return; }
+    $('status').style.display = 'none';
+    $('content').hidden = false;
+
+    // 차트
+    const byNum = [...list].sort((a, b) => Number(a.num) - Number(b.num));
+    barChart($('chartNum'), byNum.map((d) => ({ label: d.num, value: d.total })), { color: '#2563eb' });
+    lineChart($('chartDay'), daily);
+    barChart($('chartSubj'), [
+      { label: '국어', value: subj.kor }, { label: '수학', value: subj.math },
+      { label: '영어', value: subj.eng }, { label: '영단어', value: subj.word },
+    ], { color: '#334155' });
+    // 과목 막대 색 개별 지정
+    const subjEl = $('chartSubj'); const colors = ['#2563eb', '#16a34a', '#f97316', '#7c3aed'];
+    subjEl.querySelectorAll('rect').forEach((r, i) => { if (colors[i]) r.setAttribute('fill', colors[i]); });
+
+    // 표
+    const sorted = [...list].sort((a, b) => sortMode === 'total'
+      ? (b.total - a.total || Number(a.num) - Number(b.num))
+      : Number(a.num) - Number(b.num));
+    const tot = { kor: 0, math: 0, eng: 0, word: 0, total: 0 };
+    $('tbody').innerHTML = sorted.map((a) => {
+      tot.kor += a.kor; tot.math += a.math; tot.eng += a.eng; tot.word += a.word; tot.total += a.total;
+      return `<tr><td class="num">${esc(a.num)}</td><td class="name">${esc(a.name || '-')}</td><td>${a.days}</td>` +
+        `<td>${a.kor}</td><td>${a.math}</td><td>${a.eng}</td><td>${a.word}</td><td class="tot">${a.total}</td></tr>`;
+    }).join('');
+    $('tfoot').innerHTML = `<tr><th colspan="3">합계</th><th>${tot.kor}</th><th>${tot.math}</th><th>${tot.eng}</th><th>${tot.word}</th><th>${tot.total}</th></tr>`;
+  }
+
+  document.querySelectorAll('.sort button').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('.sort button').forEach((x) => x.classList.remove('on'));
+    b.classList.add('on'); sortMode = b.dataset.sort; if (rows.length) render();
+  }));
+  $('refresh').addEventListener('click', load);
+  load();
+</script>
 </body>
 </html>
