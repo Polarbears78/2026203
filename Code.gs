@@ -58,8 +58,12 @@ function doGet(e) {
         var values = sh.getRange(2, 1, sh.getLastRow() - 1, 8).getValues();
         for (var i = 0; i < values.length; i++) {
           var r = values[i];
+          var dv = r[1];
+          var dateStr = (dv instanceof Date)
+            ? Utilities.formatDate(dv, 'Asia/Seoul', 'yyyy-MM-dd')
+            : String(dv || '');
           out.push({
-            date: String(r[1] || ''),
+            date: dateStr,
             num: r[2],
             name: String(r[3] || ''),
             kor: Number(r[4]) || 0,

@@ -106,7 +106,8 @@
         if (!map.has(num)) map.set(num, { num, name: '', days: new Set(), kor: 0, math: 0, eng: 0, word: 0 });
         const a = map.get(num);
         if (r.name) a.name = r.name;
-        if (r.date) { a.days.add(r.date); allDates.add(r.date); }
+        const dnorm = normDate(r.date);
+        if (dnorm) { a.days.add(dnorm); allDates.add(dnorm); }
         a.kor += Number(r.kor) || 0;
         a.math += Number(r.math) || 0;
         a.eng += Number(r.eng) || 0;
@@ -160,6 +161,17 @@
       $('updatedNote').textContent = dts.length
         ? `기록 기간: ${dts[0]} ~ ${dts[dts.length - 1]}`
         : '';
+    }
+
+    function normDate(s) {
+      if (!s) return '';
+      const str = String(s);
+      if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(0, 10);
+      const d = new Date(str);
+      if (!isNaN(d.getTime())) {
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      }
+      return str;
     }
 
     function escapeHtml(s) {
