@@ -1,0 +1,22 @@
+name: Probe study-log endpoint
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/probe.yml'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test study-log POST (new endpoint)
+        run: |
+          URL="https://script.google.com/macros/s/AKfycbxblMzQT3ngkHnwDyNSGbVb5B1pZ6QUVFKU4e-v1qc7hvrqeTQE6wi0P53il9jsrTvn/exec"
+          echo "--- GET ---"
+          curl -sS -L -m 30 "$URL" -w "\nHTTP %{http_code}\n" | tail -4
+          echo "--- POST study row ---"
+          curl -sS -L -m 30 \
+            -H "Content-Type: text/plain;charset=utf-8" \
+            --data '{"type":"study","date":"2026-07-15","num":"0","name":"연결테스트(삭제해도 됨)","kor":"10","math":"20","eng":"15","word":"30"}' \
+            "$URL" -w "\nHTTP %{http_code}\n" | tail -6
