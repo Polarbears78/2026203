@@ -1,0 +1,21 @@
+name: Probe study endpoint
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/probe.yml'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify save + stats read
+        run: |
+          URL="https://script.google.com/macros/s/AKfycbzJDuuzjIWGSi4uM68DNyy3_zKCYJuSZgnREx0E0Bag5Yv9rPZnYKFxLiB4MgdxnF_G/exec"
+          echo "--- POST study row ---"
+          curl -sS -L -m 30 -H "Content-Type: text/plain;charset=utf-8" \
+            --data '{"type":"study","date":"2026-07-15","num":"0","name":"연결테스트(삭제해도 됨)","kor":"10","math":"20","eng":"15","word":"30"}' \
+            "$URL" -w "\nHTTP %{http_code}\n" | tail -4
+          echo "--- GET studyStats ---"
+          curl -sS -L -m 30 "$URL?action=studyStats" -w "\nHTTP %{http_code}\n" | tail -6
