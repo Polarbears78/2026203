@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>방학 학습 기록 통계 — 2학년 3반</title>
+  <meta name="description" content="방학 학습 기록 번호별 통계 표" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8A%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="back-link" href="index.html" aria-label="홈으로">‹ 홈</a>
+    <h1>📊 학습 기록 통계</h1>
+    <p class="subtitle">2학년 3반 · 방학 학습</p>
+  </header>
+
+  <main class="container">
+    <section class="card summary-card" id="summaryCard">
+      <div class="sum-item"><span class="sum-num" id="sumStudents">—</span><span class="sum-label">참여 학생</span></div>
+      <div class="sum-item"><span class="sum-num" id="sumRecords">—</span><span class="sum-label">총 기록 수</span></div>
+      <div class="sum-item"><span class="sum-num" id="sumDays">—</span><span class="sum-label">기록 기간(일)</span></div>
+    </section>
+
+    <section class="card">
+      <div class="stats-head">
+        <h2 class="card-title" style="margin:0">번호별 합계</h2>
+        <div class="sort-toggle">
+          <button class="sort-btn active" data-sort="num">번호순</button>
+          <button class="sort-btn" data-sort="total">총문항순</button>
+        </div>
+      </div>
+      <p class="status" id="status">불러오는 중…</p>
+      <div class="table-wrap">
+        <table class="stats-table" id="statsTable" hidden>
+          <thead>
+            <tr>
+              <th>번호</th><th>이름</th><th>일수</th>
+              <th>국어</th><th>수학</th><th>영어</th><th>영단어</th><th>총문항</th>
+            </tr>
+          </thead>
+          <tbody id="statsBody"></tbody>
+          <tfoot id="statsFoot"></tfoot>
+        </table>
+      </div>
+      <p class="note" id="updatedNote"></p>
+      <button class="btn btn-block btn-outline" id="refreshBtn" style="margin-top:12px">🔄 새로고침</button>
+    </section>
+
+    <section class="card">
+      <p class="help small">국어·수학·영어는 <b>푼 문항 수</b>, 영단어는 <b>암기 수</b>의 합계입니다. ‘총문항’은 국어+수학+영어 문항 수 합계입니다. 학생이 <b>방학 학습 기록</b>에서 제출한 자료를 실시간으로 집계합니다.</p>
+    </section>
+
+    <footer class="foot"><span>육민관중학교 2학년 3반</span></footer>
+  </main>
+
+  <script>
+    const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxblMzQT3ngkHnwDyNSGbVb5B1pZ6QUVFKU4e-v1qc7hvrqeTQE6wi0P53il9jsrTvn/exec';
+    let rows = [];
+    let sortMode = 'num';
+
+    const $ = (id) => document.getElementById(id);
+
+    function load() {
+      $('status').textContent = '불러오는 중…';
+      $('status').style.display = 'block';
+      $('statsTable').hidden = true;
+
+      // 이전 콜백/스크립트 정리
+      const old = document.getElementById('jsonp');
+      if (old) old.remove();
+
+      // 타임아웃(응답 없을 때)
+      window._to = setTimeout(() => {
+        $('status').textContent = '데이터를 불러오지 못했어요. 새로고침하거나, 스크립트가 통계 읽기용으로 재배포됐는지 확인해 주세요.';
+      }, 12000);
+
+      const s = document.createElement('script');
+      s.id = 'jsonp';
+      // 캐시 방지용 파라미터
+      const bust = String(performance.now()).replace('.', '');
+      s.src = ENDPOINT + '?action=studyStats&callback=onStudyData&_=' + bust;
+      s.onerror = () => {
+        clearTimeout(window._to);
+        $('status').textContent = '엔드포인트에 연결하지 못했어요. 주소와 재배포 상태를 확인해 주세요.';
+      };
+      document.body.appendChild(s);
+    }
+
+    window.onStudyData = function (data) {
+      clearTimeout(window._to);
+      if (!data || !data.ok) {
+        $('status').textContent = '데이터를 읽지 못했어요' + (data && data.message ? ' (' + data.message + ')' : '') + '.';
+        return;
+      }
+      rows = data.rows || [];
+      render();
+    };
+
+    function aggregate() {
+      const map = new Map(); // num -> agg
+      const allDates = new Set();
+      rows.forEach((r) => {
+        const num = String(r.num);
+        if (!map.has(num)) map.set(num, { num, name: '', days: new Set(), kor: 0, math: 0, eng: 0, word: 0 });
+        const a = map.get(num);
+        if (r.name) a.name = r.name;
+        if (r.date) { a.days.add(r.date); allDates.add(r.date); }
+        a.kor += Number(r.kor) || 0;
+        a.math += Number(r.math) || 0;
+        a.eng += Number(r.eng) || 0;
+        a.word += Number(r.word) || 0;
+      });
+      const list = [...map.values()].map((a) => ({
+        num: a.num, name: a.name, days: a.days.size,
+        kor: a.kor, math: a.math, eng: a.eng, word: a.word,
+        total: a.kor + a.math + a.eng,
+      }));
+      return { list, allDates };
+    }
+
+    function render() {
+      const { list, allDates } = aggregate();
+
+      $('sumStudents').textContent = list.length;
+      $('sumRecords').textContent = rows.length;
+      $('sumDays').textContent = allDates.size;
+
+      // 정렬
+      list.sort((a, b) => sortMode === 'total'
+        ? b.total - a.total || (Number(a.num) - Number(b.num))
+        : (Number(a.num) - Number(b.num)));
+
+      const body = $('statsBody');
+      body.innerHTML = '';
+      if (list.length === 0) {
+        $('status').textContent = '아직 제출된 기록이 없어요.';
+        $('statsTable').hidden = true;
+        $('updatedNote').textContent = '';
+        return;
+      }
+      const tot = { days: 0, kor: 0, math: 0, eng: 0, word: 0, total: 0 };
+      list.forEach((a) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+          `<td class="c-num">${a.num}</td><td class="c-name">${escapeHtml(a.name || '-')}</td>` +
+          `<td>${a.days}</td><td>${a.kor}</td><td>${a.math}</td><td>${a.eng}</td><td>${a.word}</td>` +
+          `<td class="c-total">${a.total}</td>`;
+        body.appendChild(tr);
+        tot.kor += a.kor; tot.math += a.math; tot.eng += a.eng; tot.word += a.word; tot.total += a.total;
+      });
+      $('statsFoot').innerHTML =
+        `<tr><th colspan="3">합계</th><th>${tot.kor}</th><th>${tot.math}</th><th>${tot.eng}</th><th>${tot.word}</th><th>${tot.total}</th></tr>`;
+
+      $('status').style.display = 'none';
+      $('statsTable').hidden = false;
+
+      const dts = [...allDates].sort();
+      $('updatedNote').textContent = dts.length
+        ? `기록 기간: ${dts[0]} ~ ${dts[dts.length - 1]}`
+        : '';
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    document.querySelectorAll('.sort-btn').forEach((b) => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('.sort-btn').forEach((x) => x.classList.remove('active'));
+        b.classList.add('active');
+        sortMode = b.dataset.sort;
+        if (rows.length) render();
+      });
+    });
+    $('refreshBtn').addEventListener('click', load);
+
+    load();
+  </script>
+</body>
+</html>

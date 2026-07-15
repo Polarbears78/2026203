@@ -305,3 +305,23 @@ textarea { resize: vertical; margin: 10px 0; }
 .field input[type="number"] { width: 100%; padding: 11px 12px; border: 1px solid var(--border); border-radius: 12px; font: inherit; }
 .field input[type="date"] { width: 100%; }
 .menu-study { border-left-color: #16a34a; }
+
+/* ===== 학습 기록 통계 ===== */
+.summary-card { display: flex; gap: 10px; text-align: center; }
+.sum-item { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 6px 0; }
+.sum-num { font-size: 1.6rem; font-weight: 900; color: var(--blue); letter-spacing: -.5px; }
+.sum-label { font-size: .78rem; color: var(--muted); font-weight: 600; }
+.stats-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 8px; }
+.sort-toggle { display: flex; gap: 6px; }
+.sort-btn { border: 1px solid var(--border); background: #fff; color: var(--muted); border-radius: 999px; padding: 6px 12px; font-size: .8rem; font-weight: 700; cursor: pointer; }
+.sort-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+.stats-table { border-collapse: collapse; width: 100%; min-width: 460px; font-size: .88rem; }
+.stats-table th, .stats-table td { border: 1px solid var(--border); padding: 8px 6px; text-align: center; white-space: nowrap; }
+.stats-table thead th { background: var(--blue); color: #fff; font-weight: 700; position: sticky; top: 0; }
+.stats-table td.c-num { font-weight: 700; color: var(--blue); }
+.stats-table td.c-name { text-align: left; }
+.stats-table td.c-total { font-weight: 800; background: #eff6ff; }
+.stats-table tbody tr:nth-child(even) { background: #f8fafc; }
+.stats-table tfoot th { background: var(--bg); font-weight: 800; }
+.status { color: var(--muted); font-size: .9rem; text-align: center; padding: 8px 0; }
+.note { font-size: .82rem; color: var(--muted); margin: 10px 0 0; }
