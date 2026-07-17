@@ -114,6 +114,7 @@
     </section>
   </div>
 
+  <button class="btn" id="saveImg" style="border-color:var(--green);color:var(--green)">📷 이미지로 저장 (PNG)</button>
   <button class="btn" id="refresh">🔄 새로고침</button>
   <p class="foot">육민관중학교 2학년 3반 · 교사용</p>
 </main>
@@ -268,6 +269,138 @@
     }).join('');
     $('tfoot').innerHTML = `<tr><th colspan="3">합계</th><th>${tot.kor}</th><th>${tot.math}</th><th>${tot.eng}</th><th>${tot.word}</th><th>${tot.total}</th></tr>`;
   }
+
+  // ── 이미지로 저장 (표+그래프를 캔버스에 그려 PNG 다운로드) ──
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  function ymd(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+  function stampStr(d) { return ymd(d) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+  const FONT = (s, w) => `${w || 400} ${s}px -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif`;
+
+  function svgToImage(svgEl, targetH) {
+    return new Promise((resolve, reject) => {
+      const vb = (svgEl.getAttribute('viewBox') || '0 0 300 200').split(/\s+/).map(Number);
+      const W = vb[2] || 300, H = vb[3] || 200;
+      let w = W * (targetH / H), h = targetH;
+      const clone = svgEl.cloneNode(true);
+      clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      clone.setAttribute('width', W);
+      clone.setAttribute('height', H);
+      const str = new XMLSerializer().serializeToString(clone);
+      const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(str);
+      const img = new Image();
+      img.onload = () => resolve({ img, w, h });
+      img.onerror = reject;
+      img.src = url;
+    });
+  }
+
+  function drawTable(ctx, x0, y0, maxW, rowH, list) {
+    const cols = [['번호', 46], ['이름', 112], ['일수', 48], ['국어', 60], ['수학', 60], ['영어', 60], ['영단어', 66], ['총문항', 74]];
+    const tW = cols.reduce((s, c) => s + c[1], 0);
+    const x = x0 + Math.max(0, (maxW - tW) / 2);
+    ctx.textBaseline = 'middle';
+    // header
+    let y = y0, cx = x;
+    ctx.fillStyle = '#2563eb'; ctx.fillRect(x, y, tW, rowH);
+    ctx.fillStyle = '#fff'; ctx.font = FONT(12, 700); ctx.textAlign = 'center';
+    cols.forEach((c) => { ctx.fillText(c[0], cx + c[1] / 2, y + rowH / 2); cx += c[1]; });
+    y += rowH;
+    // rows
+    const tot = { kor: 0, math: 0, eng: 0, word: 0, total: 0 };
+    list.forEach((a, idx) => {
+      if (idx % 2 === 1) { ctx.fillStyle = '#f8fafc'; ctx.fillRect(x, y, tW, rowH); }
+      tot.kor += a.kor; tot.math += a.math; tot.eng += a.eng; tot.word += a.word; tot.total += a.total;
+      const vals = [a.num, a.name || '-', a.days, a.kor, a.math, a.eng, a.word, a.total];
+      cx = x;
+      cols.forEach((c, i) => {
+        if (i === 7) { ctx.font = FONT(12, 800); ctx.fillStyle = '#1d4ed8'; }
+        else if (i === 0) { ctx.font = FONT(12, 700); ctx.fillStyle = '#2563eb'; }
+        else { ctx.font = FONT(12, 400); ctx.fillStyle = '#0f172a'; }
+        if (i === 1) { ctx.textAlign = 'left'; ctx.fillText(String(vals[i]), cx + 6, y + rowH / 2); }
+        else { ctx.textAlign = 'center'; ctx.fillText(String(vals[i]), cx + c[1] / 2, y + rowH / 2); }
+        cx += c[1];
+      });
+      y += rowH;
+    });
+    // footer
+    ctx.fillStyle = '#eef2f7'; ctx.fillRect(x, y, tW, rowH);
+    ctx.fillStyle = '#0f172a'; ctx.font = FONT(12, 800); ctx.textAlign = 'center';
+    const fvals = ['합계', '', '', tot.kor, tot.math, tot.eng, tot.word, tot.total];
+    cx = x; cols.forEach((c, i) => { if (fvals[i] !== '') ctx.fillText(String(fvals[i]), cx + c[1] / 2, y + rowH / 2); cx += c[1]; });
+    y += rowH;
+    // grid
+    const rowsTotal = list.length + 2, top = y0, bottom = y0 + rowsTotal * rowH;
+    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+    for (let i = 0; i <= rowsTotal; i++) { const yy = top + i * rowH; ctx.beginPath(); ctx.moveTo(x, yy); ctx.lineTo(x + tW, yy); ctx.stroke(); }
+    let vx = x; ctx.beginPath(); ctx.moveTo(vx, top); ctx.lineTo(vx, bottom); ctx.stroke();
+    cols.forEach((c) => { vx += c[1]; ctx.beginPath(); ctx.moveTo(vx, top); ctx.lineTo(vx, bottom); ctx.stroke(); });
+  }
+
+  async function captureImage() {
+    const { list, allDates } = aggregate();
+    if (!list.length) { alert('저장할 데이터가 없어요.'); return; }
+    const btn = $('saveImg'), orig = btn.textContent;
+    btn.disabled = true; btn.textContent = '이미지 생성 중…';
+    try {
+      const maxW = 720, sc = 2, pad = 20, cw = maxW + pad * 2, rowH = 26;
+      const chartDefs = [['번호별 총문항 수', $('chartNum')], ['일별 전체 학습량 추이', $('chartDay')], ['과목별 합계', $('chartSubj')]];
+      const rendered = [];
+      for (const [title, el] of chartDefs) {
+        let r = await svgToImage(el, 180);
+        if (r.w > maxW) { const f = maxW / r.w; r = { img: r.img, w: maxW, h: 180 * f }; }
+        rendered.push([title, r]);
+      }
+      const sorted = [...list].sort((a, b) => sortMode === 'total'
+        ? (b.total - a.total || Number(a.num) - Number(b.num)) : Number(a.num) - Number(b.num));
+
+      let H = pad + 34 + 30 + 44; // header block + summary
+      rendered.forEach(([t, r]) => { H += 24 + r.h + 16; });
+      H += 26 + (sorted.length + 2) * rowH + pad; // table
+
+      const canvas = document.createElement('canvas');
+      canvas.width = cw * sc; canvas.height = Math.ceil(H) * sc;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(sc, sc);
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cw, H);
+      ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+
+      let y = pad;
+      ctx.fillStyle = '#0f172a'; ctx.font = FONT(21, 800);
+      ctx.fillText('📊 방학 학습 기록 통계 · 2학년 3반', pad, y); y += 30;
+      const dts = [...allDates].sort();
+      ctx.fillStyle = '#64748b'; ctx.font = FONT(12, 600);
+      const period = dts.length ? `기록 기간 ${dts[0]} ~ ${dts[dts.length - 1]}` : '';
+      ctx.fillText((period ? period + '   ·   ' : '') + '저장 ' + stampStr(new Date()), pad, y); y += 30;
+
+      ctx.fillStyle = '#2563eb'; ctx.font = FONT(18, 800);
+      ctx.fillText(`참여 ${list.length}명   ·   총 기록 ${rows.length}건   ·   기록일 ${allDates.size}일`, pad, y); y += 40;
+
+      for (const [title, r] of rendered) {
+        ctx.fillStyle = '#0f172a'; ctx.font = FONT(14, 800); ctx.textAlign = 'left';
+        ctx.fillText(title, pad, y); y += 22;
+        ctx.drawImage(r.img, pad + (maxW - r.w) / 2, y, r.w, r.h); y += r.h + 16;
+      }
+
+      ctx.fillStyle = '#0f172a'; ctx.font = FONT(14, 800); ctx.textAlign = 'left';
+      ctx.fillText('번호별 합계 표', pad, y); y += 26;
+      drawTable(ctx, pad, y, maxW, rowH, sorted);
+
+      const done = (blob) => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = '학습통계_' + ymd(new Date()) + '.png';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+      };
+      if (canvas.toBlob) canvas.toBlob(done, 'image/png');
+      else { const u = canvas.toDataURL('image/png'); const a = document.createElement('a'); a.href = u; a.download = '학습통계_' + ymd(new Date()) + '.png'; a.click(); }
+    } catch (e) {
+      alert('이미지 생성에 실패했어요. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      btn.disabled = false; btn.textContent = orig;
+    }
+  }
+  $('saveImg').addEventListener('click', captureImage);
 
   document.querySelectorAll('.sort button').forEach((b) => b.addEventListener('click', () => {
     document.querySelectorAll('.sort button').forEach((x) => x.classList.remove('on'));
