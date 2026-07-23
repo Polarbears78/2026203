@@ -14,11 +14,13 @@ function doPost(e) {
 
     if (d.type === 'study') {
       var log = ss.getSheetByName('학습기록') || ss.insertSheet('학습기록');
-      var logHeaders = ['제출시각', '날짜', '번호', '이름', '국어(문항)', '수학(문항)', '영어(문항)', '영어단어(암기)'];
+      // 과학·독서활동은 기존 데이터 정렬 보존을 위해 맨 뒤(9·10열)에 추가
+      var logHeaders = ['제출시각', '날짜', '번호', '이름', '국어(문항)', '수학(문항)', '영어(문항)', '영어단어(암기)', '과학(문항)', '독서활동'];
       if (log.getLastRow() === 0) log.appendRow(logHeaders);
+      else if (log.getLastColumn() < logHeaders.length) log.getRange(1, 1, 1, logHeaders.length).setValues([logHeaders]);
       log.appendRow([
         new Date(), d.date || '', d.num || '', d.name || '',
-        d.kor || '', d.math || '', d.eng || '', d.word || ''
+        d.kor || '', d.math || '', d.eng || '', d.word || '', d.sci || '', d.reading || ''
       ]);
     } else {
       var sheet = ss.getSheetByName('응답') || ss.insertSheet('응답');
@@ -55,7 +57,7 @@ function doGet(e) {
       var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('학습기록');
       var out = [];
       if (sh && sh.getLastRow() > 1) {
-        var values = sh.getRange(2, 1, sh.getLastRow() - 1, 8).getValues();
+        var values = sh.getRange(2, 1, sh.getLastRow() - 1, 10).getValues();
         for (var i = 0; i < values.length; i++) {
           var r = values[i];
           var dv = r[1];
@@ -69,7 +71,9 @@ function doGet(e) {
             kor: Number(r[4]) || 0,
             math: Number(r[5]) || 0,
             eng: Number(r[6]) || 0,
-            word: Number(r[7]) || 0
+            word: Number(r[7]) || 0,
+            sci: Number(r[8]) || 0,
+            reading: String(r[9] || '')
           });
         }
       }

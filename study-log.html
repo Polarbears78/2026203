@@ -57,9 +57,21 @@
             <input type="number" id="eng" inputmode="numeric" min="0" placeholder="0" />
           </div>
           <div class="field">
+            <label for="sci">과학 <span class="unit">푼 문항 수</span></label>
+            <input type="number" id="sci" inputmode="numeric" min="0" placeholder="0" />
+          </div>
+          <div class="field">
             <label for="word">영어 단어 <span class="unit">암기 수</span></label>
             <input type="number" id="word" inputmode="numeric" min="0" placeholder="0" />
           </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="card-title">독서활동</h2>
+        <div class="field">
+          <label for="reading">오늘 읽은 책·내용 <span class="opt">(자유롭게)</span></label>
+          <textarea id="reading" rows="4" placeholder="예: 『불편한 편의점』 30~70쪽 — 주인공이 …"></textarea>
         </div>
       </section>
     </form>
@@ -117,7 +129,9 @@
         kor: g('kor') || '0',
         math: g('math') || '0',
         eng: g('eng') || '0',
+        sci: g('sci') || '0',
         word: g('word') || '0',
+        reading: g('reading'),
       };
 
       const original = submitBtn.textContent;
@@ -134,7 +148,7 @@
         status.textContent = '✓ ' + payload.date + ' 기록 완료! 내일도 화이팅 💪';
         submitBtn.textContent = '기록 완료 ✓';
         // 입력값(수치)만 비우고 번호·이름·날짜는 유지
-        ['kor', 'math', 'eng', 'word'].forEach((id) => { document.getElementById(id).value = ''; });
+        ['kor', 'math', 'eng', 'sci', 'word', 'reading'].forEach((id) => { document.getElementById(id).value = ''; });
       } catch (e) {
         status.textContent = '⚠ 전송에 실패했어요. 인터넷 확인 후 다시 눌러 주세요.';
         submitBtn.textContent = original;
