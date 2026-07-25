@@ -137,6 +137,17 @@
 </main>
 
 <script>
+  // 교사용 비밀번호 잠금 (직접 주소 접근 차단)
+  if (sessionStorage.getItem('teacherAuth') !== 'ok') {
+    const pw = prompt('🔒 교사용 비밀번호를 입력하세요');
+    if (pw === '3275') {
+      try { sessionStorage.setItem('teacherAuth', 'ok'); } catch {}
+    } else {
+      document.body.innerHTML = '<div style="max-width:520px;margin:60px auto;padding:24px;text-align:center;font-family:sans-serif;color:#4a3b56"><h2>🔒 접근 권한이 없습니다</h2><p>교사용 통계 페이지입니다.</p><p><a href="index.html">홈으로 돌아가기</a></p></div>';
+      throw new Error('unauthorized');
+    }
+  }
+
   const ENDPOINT = 'https://script.google.com/macros/s/AKfycbw4PoFX4UCb5QEF-G8pXk3sJET7Ig5piv9kcFQRye1h6LKLGPgOua8m3NvhaXWrcM8/exec';
   const $ = (id) => document.getElementById(id);
   let rows = [], sortMode = 'num', timer = null;

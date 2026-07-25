@@ -81,6 +81,10 @@
     <div class="action-bar">
       <button class="btn btn-block btn-submit" id="submitBtn">✅ 오늘 기록하기</button>
     </div>
+
+    <p style="text-align:center; margin-top:14px">
+      <button class="link-btn" id="teacherBtn">🔒 교사용 결과 보기</button>
+    </p>
   </main>
 
   <script>
@@ -155,6 +159,18 @@
       } finally {
         submitBtn.disabled = false;
         setTimeout(() => { submitBtn.textContent = original; }, 4000);
+      }
+    });
+
+    // 교사용 결과 페이지 이동 (비밀번호)
+    document.getElementById('teacherBtn').addEventListener('click', () => {
+      const pw = prompt('🔒 교사용 비밀번호를 입력하세요');
+      if (pw === null) return;
+      if (pw === '3275') {
+        try { sessionStorage.setItem('teacherAuth', 'ok'); } catch {}
+        location.href = 'study-stats.html';
+      } else {
+        alert('비밀번호가 올바르지 않아요.');
       }
     });
 
