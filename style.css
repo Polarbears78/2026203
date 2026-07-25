@@ -323,7 +323,7 @@ textarea { resize: vertical; margin: 10px 0; }
 .log-grid .field { margin-bottom: 0; }
 .field select { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 14px; font: inherit; background: #fffafd; }
 .field input[type="number"] { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 14px; font: inherit; background: #fffafd; }
-.field input[type="date"] { width: 100%; }
+.field input[type="date"] { width: auto; max-width: 220px; }
 
 /* ===== 학습 기록 통계 ===== */
 .summary-card { display: flex; gap: 10px; text-align: center; }
