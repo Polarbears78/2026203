@@ -1,0 +1,23 @@
+name: Probe endpoint
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/probe.yml'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify board + study on new endpoint
+        run: |
+          URL="https://script.google.com/macros/s/AKfycbw4PoFX4UCb5QEF-G8pXk3sJET7Ig5piv9kcFQRye1h6LKLGPgOua8m3NvhaXWrcM8/exec"
+          echo "--- POST board ---"
+          curl -sS -L -m 30 -H "Content-Type: text/plain;charset=utf-8" \
+            --data '{"type":"board","name":"연결테스트(삭제해도 됨)","text":"게시판 연결 확인 🎉"}' \
+            "$URL" -w "\nHTTP %{http_code}\n" | tail -3
+          echo "--- GET board ---"
+          curl -sS -L -m 30 "$URL?action=board" -w "\nHTTP %{http_code}\n" | tail -4
+          echo "--- GET studyStats ---"
+          curl -sS -L -m 30 "$URL?action=studyStats" -w "\nHTTP %{http_code}\n" | tail -3
