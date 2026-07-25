@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ff9ecd" />
+  <title>우리 반 게시판 — 2학년 3반</title>
+  <meta name="description" content="2학년 3반 학생 게시판" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="게시판" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%AC%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="back-link" href="index.html" aria-label="홈으로">‹ 홈</a>
+    <h1>💬 우리 반 게시판</h1>
+    <p class="subtitle">2학년 3반 · 자유롭게 이야기해요</p>
+  </header>
+
+  <main class="container">
+    <!-- 글쓰기 -->
+    <section class="card">
+      <h2 class="card-title">✏️ 새 글 쓰기</h2>
+      <div class="field">
+        <label for="name">닉네임 <span class="opt">(선택)</span></label>
+        <input type="text" id="name" maxlength="20" placeholder="예: 초코라떼" />
+      </div>
+      <div class="field" style="margin-bottom:10px">
+        <label for="text">내용</label>
+        <textarea id="text" rows="3" maxlength="1000" placeholder="반 친구들에게 하고 싶은 말을 적어보세요 :)"></textarea>
+      </div>
+      <button class="btn btn-block btn-submit" id="postBtn">올리기 📮</button>
+      <p class="save-status" id="status"></p>
+    </section>
+
+    <div class="board-head">
+      <h2 class="board-title">📌 게시글</h2>
+      <button class="mini-refresh" id="refresh">🔄 새로고침</button>
+    </div>
+
+    <p class="status" id="listStatus">불러오는 중…</p>
+    <div id="posts"></div>
+
+    <footer class="foot"><span>서로 예의를 지켜요 🌸 · 육민관중학교 2학년 3반</span></footer>
+  </main>
+
+  <script>
+    const ENDPOINT = 'https://script.google.com/macros/s/AKfycbzJDuuzjIWGSi4uM68DNyy3_zKCYJuSZgnREx0E0Bag5Yv9rPZnYKFxLiB4MgdxnF_G/exec';
+    const NAME_KEY = 'board-name';
+    const $ = (id) => document.getElementById(id);
+    let timer = null;
+
+    // 닉네임 기억
+    try { const n = localStorage.getItem(NAME_KEY); if (n) $('name').value = n; } catch {}
+    $('name').addEventListener('input', () => { try { localStorage.setItem(NAME_KEY, $('name').value); } catch {} });
+
+    function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+    function loadPosts() {
+      $('listStatus').style.display = 'block';
+      $('listStatus').textContent = '불러오는 중…';
+      const old = $('jsonp'); if (old) old.remove();
+      timer = setTimeout(() => { $('listStatus').textContent = '글을 불러오지 못했어요. 새로고침해 주세요.'; }, 12000);
+      const s = document.createElement('script');
+      s.id = 'jsonp';
+      s.src = ENDPOINT + '?action=board&callback=onBoard&_=' + String(performance.now()).replace('.', '');
+      s.onerror = () => { clearTimeout(timer); $('listStatus').textContent = '게시판에 연결하지 못했어요.'; };
+      document.body.appendChild(s);
+    }
+
+    window.onBoard = (data) => {
+      clearTimeout(timer);
+      if (!data || !data.ok) { $('listStatus').textContent = '글을 읽지 못했어요' + (data && data.message ? ' (' + data.message + ')' : '') + '.'; return; }
+      const posts = (data.posts || []).slice().sort((a, b) => String(b.time).localeCompare(String(a.time)));
+      if (!posts.length) { $('listStatus').style.display = 'block'; $('listStatus').textContent = '아직 글이 없어요. 첫 글을 남겨보세요! ✨'; $('posts').innerHTML = ''; return; }
+      $('listStatus').style.display = 'none';
+      $('posts').innerHTML = posts.map((p) =>
+        `<div class="post"><div class="post-top"><span class="post-name">${esc(p.name || '익명')}</span><span class="post-time">${esc(p.time)}</span></div><div class="post-body">${esc(p.text)}</div></div>`
+      ).join('');
+    };
+
+    const postBtn = $('postBtn');
+    postBtn.addEventListener('click', async () => {
+      const text = $('text').value.trim();
+      if (!text) { alert('내용을 입력해 주세요.'); return; }
+      const payload = { type: 'board', name: $('name').value.trim() || '익명', text };
+      const orig = postBtn.textContent;
+      postBtn.disabled = true; postBtn.textContent = '올리는 중…';
+      $('status').textContent = '';
+      try {
+        await fetch(ENDPOINT, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
+        $('text').value = '';
+        $('status').textContent = '✓ 글이 올라갔어요!';
+        setTimeout(loadPosts, 1200);
+      } catch (e) {
+        $('status').textContent = '⚠ 전송에 실패했어요. 잠시 후 다시 시도해 주세요.';
+      } finally {
+        postBtn.disabled = false; postBtn.textContent = orig;
+        setTimeout(() => { $('status').textContent = ''; }, 4000);
+      }
+    });
+
+    $('refresh').addEventListener('click', loadPosts);
+    loadPosts();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>

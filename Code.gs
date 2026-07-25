@@ -12,7 +12,15 @@ function doPost(e) {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var d = JSON.parse(e.postData.contents);
 
-    if (d.type === 'study') {
+    if (d.type === 'board') {
+      var bd = ss.getSheetByName('게시판') || ss.insertSheet('게시판');
+      if (bd.getLastRow() === 0) bd.appendRow(['작성시각', '닉네임', '내용']);
+      bd.appendRow([
+        new Date(),
+        String(d.name || '익명').slice(0, 20),
+        String(d.text || '').slice(0, 1000)
+      ]);
+    } else if (d.type === 'study') {
       var log = ss.getSheetByName('학습기록') || ss.insertSheet('학습기록');
       // 과학·독서활동은 기존 데이터 정렬 보존을 위해 맨 뒤(9·10열)에 추가
       var logHeaders = ['제출시각', '날짜', '번호', '이름', '국어(문항)', '수학(문항)', '영어(문항)', '영어단어(암기)', '과학(문항)', '독서활동'];
@@ -86,6 +94,32 @@ function doGet(e) {
         .setMimeType(ContentService.MimeType.JAVASCRIPT);
     }
     return ContentService.createTextOutput(payload).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  if (p.action === 'board') {
+    var bpayload;
+    try {
+      var bsh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('게시판');
+      var posts = [];
+      if (bsh && bsh.getLastRow() > 1) {
+        var bvals = bsh.getRange(2, 1, bsh.getLastRow() - 1, 3).getValues();
+        for (var j = 0; j < bvals.length; j++) {
+          var tv = bvals[j][0];
+          var ts = (tv instanceof Date)
+            ? Utilities.formatDate(tv, 'Asia/Seoul', 'yyyy-MM-dd HH:mm')
+            : String(tv || '');
+          posts.push({ time: ts, name: String(bvals[j][1] || ''), text: String(bvals[j][2] || '') });
+        }
+      }
+      bpayload = JSON.stringify({ ok: true, posts: posts });
+    } catch (err) {
+      bpayload = JSON.stringify({ ok: false, message: String(err) });
+    }
+    if (cb) {
+      return ContentService.createTextOutput(cb + '(' + bpayload + ')')
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+    return ContentService.createTextOutput(bpayload).setMimeType(ContentService.MimeType.JSON);
   }
 
   return ContentService.createTextOutput('2학년 3반 폼 수집 엔드포인트가 동작 중입니다.');
