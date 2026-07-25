@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#2563eb" />
+  <meta name="theme-color" content="#ff9ecd" />
   <title>2학년 3반 안내</title>
   <meta name="description" content="2학년 3반 주간안내와 자유복의 날을 확인하는 페이지" />
   <link rel="manifest" href="manifest.webmanifest" />
@@ -92,8 +92,22 @@
       </a>
     </section>
 
+    <!-- 앱 설치 안내 -->
+    <section class="card install-card" id="installCard" hidden>
+      <h2 class="card-title">📲 앱으로 설치하기</h2>
+      <p class="install-desc">홈 화면에 추가하면 주소창 없이 <b>앱처럼</b> 바로 열 수 있어요!</p>
+      <button class="btn btn-block" id="installBtn" hidden>홈 화면에 앱 설치 💗</button>
+      <div class="install-ios" id="installIos" hidden>
+        <p class="ios-step">아이폰은 이렇게 설치해요 👇</p>
+        <ol class="ios-list">
+          <li>사파리(Safari) 아래 <b>공유 <span class="ios-share">⬆︎</span></b> 버튼 누르기</li>
+          <li><b>‘홈 화면에 추가’</b> 선택 → <b>추가</b></li>
+        </ol>
+      </div>
+    </section>
+
     <footer class="foot">
-      <span>육민관중학교 2학년 3반</span>
+      <span>육민관중학교 2학년 3반 💗</span>
     </footer>
   </main>
 
@@ -142,6 +156,36 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
     }
+
+    // ── 앱 설치 안내 ──
+    (function () {
+      const card = document.getElementById('installCard');
+      const btn = document.getElementById('installBtn');
+      const ios = document.getElementById('installIos');
+      const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      if (standalone) return; // 이미 설치됨 → 숨김
+
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      let deferred = null;
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferred = e;
+        btn.hidden = false;
+        card.hidden = false;
+      });
+      btn.addEventListener('click', async () => {
+        if (!deferred) return;
+        deferred.prompt();
+        await deferred.userChoice;
+        deferred = null;
+        card.hidden = true;
+      });
+      window.addEventListener('appinstalled', () => { card.hidden = true; });
+
+      // iOS는 beforeinstallprompt가 없으므로 안내문 표시
+      if (isIOS) { ios.hidden = false; card.hidden = false; }
+    })();
   </script>
 </body>
 </html>

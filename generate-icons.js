@@ -65,15 +65,33 @@ function shirtAlpha(x, y) {
   return on;
 }
 
+// 하트 모양 판정 (고전 하트 곡선). x,y는 0~1, 중앙 기준.
+function inHeart(px, py) {
+  const x = (px - 0.5) * 3.0;
+  const y = (0.45 - py) * 3.0; // 위로 갈수록 +, 살짝 위로 이동
+  const a = x * x + y * y - 1;
+  return a * a * a - x * x * y * y * y <= 0;
+}
+
+// 두 색 보간
+function mix(c1, c2, t) {
+  return [
+    Math.round(c1[0] + (c2[0] - c1[0]) * t),
+    Math.round(c1[1] + (c2[1] - c1[1]) * t),
+    Math.round(c1[2] + (c2[2] - c1[2]) * t),
+  ];
+}
+
 function makeIcon(size) {
   const buf = Buffer.alloc(size * size * 4);
-  const bg = [37, 99, 235];   // #2563eb
-  const fg = [255, 255, 255];
+  const top = [255, 158, 205];    // #ff9ecd
+  const bot = [181, 140, 240];    // #b58cf0
+  const white = [255, 255, 255];
   for (let py = 0; py < size; py++) {
     for (let px = 0; px < size; px++) {
       const x = (px + 0.5) / size, y = (py + 0.5) / size;
-      const on = shirtAlpha(x, y);
-      const c = on ? fg : bg;
+      const bg = mix(top, bot, y);          // 세로 파스텔 그라데이션
+      const c = inHeart(x, y) ? white : bg;  // 흰 하트
       const i = (py * size + px) * 4;
       buf[i] = c[0]; buf[i + 1] = c[1]; buf[i + 2] = c[2]; buf[i + 3] = 255;
     }

@@ -360,3 +360,12 @@ textarea { resize: vertical; margin: 10px 0; }
 .post-body { font-size: .95rem; white-space: pre-wrap; word-break: break-word; color: var(--text); }
 .menu-board { background: #eefaff; border-color: #cceeff; }
 .menu-board .menu-emoji { background: #d7f1ff; }
+
+/* ===== 앱 설치 안내 ===== */
+.install-card { background: linear-gradient(135deg, #fff0f8, #f1ecff); border: 1.5px solid #f3d9f0; }
+.install-desc { margin: 0 0 12px; font-size: .92rem; color: #7a5b78; }
+.install-ios { margin-top: 4px; }
+.ios-step { margin: 0 0 6px; font-weight: 800; color: var(--blue); font-size: .9rem; }
+.ios-list { margin: 0; padding-left: 20px; font-size: .9rem; }
+.ios-list li { margin-bottom: 5px; }
+.ios-share { display: inline-block; border: 1.5px solid var(--blue); color: var(--blue); border-radius: 6px; padding: 0 5px; font-weight: 800; }
