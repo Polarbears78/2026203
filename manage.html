@@ -20,77 +20,79 @@
     <p class="subtitle">2학년 3반 · 명단 · 뽑기 · 모둠 · 자리 · 당번</p>
   </header>
 
-  <main class="container">
-    <!-- 학생 명단 -->
-    <section class="card">
-      <h2 class="card-title">👧👦 학생 명단</h2>
-      <p class="help">이름을 쉼표(,)나 줄바꿈으로 구분해서 입력하세요. 이 기기에만 저장돼요.</p>
-      <textarea id="roster" rows="4" placeholder="예: 김하늘, 이도윤, 박서연&#10;최지우"></textarea>
-      <div class="row">
-        <button class="btn btn-block" id="saveRoster">명단 저장 💾</button>
-      </div>
-      <p class="save-status" id="rosterStatus"></p>
-      <div class="chip-list" id="rosterChips"></div>
-      <p class="empty-hint" id="rosterEmpty">아직 등록된 학생이 없어요.</p>
-    </section>
+  <main class="container manage-container">
+    <div class="manage-grid">
+      <!-- 학생 명단 -->
+      <section class="card">
+        <h2 class="card-title">👧👦 학생 명단</h2>
+        <p class="help">이름을 쉼표(,)나 줄바꿈으로 구분해서 입력하세요. 이 컴퓨터에만 저장돼요.</p>
+        <textarea id="roster" rows="4" placeholder="예: 김하늘, 이도윤, 박서연&#10;최지우"></textarea>
+        <div class="row">
+          <button class="btn btn-block" id="saveRoster">명단 저장 💾</button>
+        </div>
+        <p class="save-status" id="rosterStatus"></p>
+        <div class="chip-list" id="rosterChips"></div>
+        <p class="empty-hint" id="rosterEmpty">아직 등록된 학생이 없어요.</p>
+      </section>
 
-    <!-- 발표자 뽑기 -->
-    <section class="card pick-card">
-      <h2 class="card-title">🎲 발표자 뽑기</h2>
-      <div class="pick-box" id="pickBox">누가 될까요? 👀</div>
-      <div class="row">
-        <button class="btn btn-block btn-pick" id="pickBtn">랜덤으로 뽑기 ✨</button>
-      </div>
-      <label class="check-label"><input type="checkbox" id="noRepeat" checked /> 한 번 뽑힌 사람은 제외 (전원 뽑히면 초기화)</label>
-      <p class="note" id="pickLeft"></p>
-    </section>
+      <!-- 발표자 뽑기 -->
+      <section class="card pick-card">
+        <h2 class="card-title">🎲 발표자 뽑기</h2>
+        <div class="pick-box" id="pickBox">누가 될까요? 👀</div>
+        <div class="row">
+          <button class="btn btn-block btn-pick" id="pickBtn">랜덤으로 뽑기 ✨</button>
+        </div>
+        <label class="check-label"><input type="checkbox" id="noRepeat" checked /> 한 번 뽑힌 사람은 제외 (전원 뽑히면 초기화)</label>
+        <p class="note" id="pickLeft"></p>
+      </section>
 
-    <!-- 모둠 편성 -->
-    <section class="card">
-      <h2 class="card-title">👥 모둠 편성</h2>
-      <div class="row" style="margin-bottom:12px">
-        <label class="inline-label" for="groupSize">한 모둠 인원</label>
-        <select id="groupSize">
-          <option value="2">2명</option>
-          <option value="3">3명</option>
-          <option value="4" selected>4명</option>
-          <option value="5">5명</option>
-          <option value="6">6명</option>
-        </select>
-        <button class="btn" id="groupBtn">모둠 짜기 🔀</button>
-      </div>
-      <div id="groupResult"></div>
-    </section>
+      <!-- 모둠 편성 -->
+      <section class="card">
+        <h2 class="card-title">👥 모둠 편성</h2>
+        <div class="row" style="margin-bottom:12px">
+          <label class="inline-label" for="groupSize">한 모둠 인원</label>
+          <select id="groupSize">
+            <option value="2">2명</option>
+            <option value="3">3명</option>
+            <option value="4" selected>4명</option>
+            <option value="5">5명</option>
+            <option value="6">6명</option>
+          </select>
+          <button class="btn" id="groupBtn">모둠 짜기 🔀</button>
+        </div>
+        <div class="team-grid" id="groupResult"></div>
+      </section>
 
-    <!-- 자리 배치 -->
-    <section class="card">
-      <h2 class="card-title">🪑 자리 배치</h2>
-      <div class="row" style="margin-bottom:12px">
-        <label class="inline-label" for="seatCols">한 줄 자리 수</label>
-        <select id="seatCols">
-          <option value="3">3자리</option>
-          <option value="4" selected>4자리</option>
-          <option value="5">5자리</option>
-          <option value="6">6자리</option>
-        </select>
-        <button class="btn" id="seatBtn">자리 섞기 🔀</button>
-      </div>
-      <p class="note" style="margin:0 0 10px">맨 윗줄이 교탁(칠판) 쪽이에요.</p>
-      <div id="seatResult"></div>
-    </section>
+      <!-- 청소 당번 -->
+      <section class="card">
+        <h2 class="card-title">🧹 청소 당번 배정</h2>
+        <p class="help">구역을 쉼표(,)나 줄바꿈으로 구분해서 입력하면 학생을 골고루 나눠줘요.</p>
+        <textarea id="areas" rows="2" placeholder="예: 교실 바닥, 복도, 창문, 칠판·정리"></textarea>
+        <div class="row">
+          <button class="btn btn-block" id="dutyBtn">당번 뽑기 🎯</button>
+        </div>
+        <div id="dutyResult"></div>
+      </section>
 
-    <!-- 청소 당번 -->
-    <section class="card">
-      <h2 class="card-title">🧹 청소 당번 배정</h2>
-      <p class="help">구역을 쉼표(,)나 줄바꿈으로 구분해서 입력하면 학생을 골고루 나눠줘요.</p>
-      <textarea id="areas" rows="2" placeholder="예: 교실 바닥, 복도, 창문, 칠판·정리"></textarea>
-      <div class="row">
-        <button class="btn btn-block" id="dutyBtn">당번 뽑기 🎯</button>
-      </div>
-      <div id="dutyResult"></div>
-    </section>
+      <!-- 자리 배치 -->
+      <section class="card span-2">
+        <h2 class="card-title">🪑 자리 배치</h2>
+        <div class="row seat-controls" style="margin-bottom:12px">
+          <label class="inline-label" for="seatCols">한 줄 자리 수</label>
+          <select id="seatCols">
+            <option value="3">3자리</option>
+            <option value="4">4자리</option>
+            <option value="5">5자리</option>
+            <option value="6" selected>6자리</option>
+          </select>
+          <button class="btn" id="seatBtn">자리 섞기 🔀</button>
+        </div>
+        <p class="note" style="margin:0 0 10px">맨 윗줄이 교탁(칠판) 쪽이에요.</p>
+        <div id="seatResult"></div>
+      </section>
+    </div>
 
-    <footer class="foot"><span>결과는 이 기기에만 저장돼요 · 육민관중학교 2학년 3반 💗</span></footer>
+    <footer class="foot"><span>결과는 이 컴퓨터에만 저장돼요 · 육민관중학교 2학년 3반 💗</span></footer>
   </main>
 
   <script>
