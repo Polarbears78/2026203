@@ -84,12 +84,26 @@
           <div id="dProfile"></div>
         </section>
 
-        <!-- 성적 레이더 -->
-        <section class="card" id="dGradeCard" hidden>
+        <!-- 메모·분포 -->
+        <section class="card">
+          <h2 class="card-title">학생 메모</h2>
+          <p class="help">특이사항·건강·가정환경 등 이 학생에 대한 메모. 입력하면 자동 저장됩니다.</p>
+          <textarea id="dMemo" rows="4" placeholder="예: 알레르기 있음(견과류), 미술에 관심 많음"></textarea>
+          <p class="save-status" id="memoStatus"></p>
+          <div id="dBars" style="margin-top:14px"></div>
+        </section>
+
+        <!-- 성적 분석 (전체 폭: 레이더 + 변화 그래프 나란히) -->
+        <section class="card span-2" id="dGradeCard" hidden>
           <h2 class="card-title">성적 분석 <span class="tag" id="dGradeExam"></span></h2>
-          <div class="radar-wrap" id="dRadar"></div>
-          <p class="radar-legend"><span class="legend-dot legend-me"></span> 학생 점수 <span class="legend-dot legend-avg"></span> 과목 평균</p>
-          <div class="table-wrap" id="dGradeTable" style="margin-top:12px"></div>
+          <div class="grade-flex">
+            <div class="grade-left">
+              <div class="radar-wrap" id="dRadar"></div>
+              <p class="radar-legend" id="dRadarLegend"><span class="legend-dot legend-me"></span> 학생 점수 <span class="legend-dot legend-avg"></span> 과목 평균</p>
+            </div>
+            <div class="grade-right" id="dTrend"></div>
+          </div>
+          <div class="table-wrap" id="dGradeTable" style="margin-top:14px"></div>
         </section>
 
         <!-- 상담카드 원본 내용 -->
@@ -129,17 +143,8 @@
           <p class="save-status" id="cStatus"></p>
         </section>
 
-        <!-- 메모·분석 -->
-        <section class="card">
-          <h2 class="card-title">학생 메모</h2>
-          <p class="help">특이사항·건강·가정환경 등 이 학생에 대한 메모. 입력하면 자동 저장됩니다.</p>
-          <textarea id="dMemo" rows="4" placeholder="예: 알레르기 있음(견과류), 미술에 관심 많음"></textarea>
-          <p class="save-status" id="memoStatus"></p>
-          <div id="dBars" style="margin-top:14px"></div>
-        </section>
-
         <!-- 상담 기록 목록 -->
-        <section class="card span-2">
+        <section class="card">
           <h2 class="card-title">상담 기록 <span class="tag" id="dRecCount"></span></h2>
           <div id="dRecs"></div>
           <p class="empty-hint" id="dRecEmpty">아직 상담 기록이 없습니다.</p>
@@ -338,6 +343,40 @@
       });
       return s + '</svg>';
     }
+    // ── 국·수·영 성적 변화 꺾은선 그래프 ──
+    const TREND_SUBJECTS = [['국어', '#4f46e5'], ['수학', '#059669'], ['영어', '#f59e0b']];
+    function trendBlock(hist) {
+      const pts = hist.filter((g) => TREND_SUBJECTS.some(([s]) => isFinite(g.scores[s])));
+      if (pts.length < 2) return '';
+      const W = 560, H = 250, L = 34, R = 24, T = 16, B = 46;
+      const iw = W - L - R, ih = H - T - B;
+      const x = (i) => L + (i * iw) / (pts.length - 1);
+      const y = (v) => T + ((100 - v) / 100) * ih;
+      let s = `<svg class="trend-svg" viewBox="0 0 ${W} ${H}">`;
+      [0, 25, 50, 75, 100].forEach((v) => {
+        s += `<line x1="${L}" y1="${y(v)}" x2="${W - R}" y2="${y(v)}" stroke="#e2e8f0"/><text x="${L - 6}" y="${(y(v) + 3).toFixed(1)}" text-anchor="end" font-size="9" fill="#94a3b8">${v}</text>`;
+      });
+      pts.forEach((g, i) => {
+        const words = g.exam.split(' ');
+        const l1 = words[0], l2 = words.slice(1).join(' ');
+        s += `<text x="${x(i).toFixed(1)}" y="${H - B + 17}" text-anchor="middle" font-size="9.5" fill="#64748b" font-weight="600">${esc(l1)}<tspan x="${x(i).toFixed(1)}" dy="11">${esc(l2)}</tspan></text>`;
+      });
+      TREND_SUBJECTS.forEach(([sub, color], si) => {
+        const dx = [0, -14, 14][si] || 0; // 점수가 비슷할 때 라벨 겹침 방지
+        const coords = [];
+        pts.forEach((g, i) => { if (isFinite(g.scores[sub])) coords.push([x(i), y(g.scores[sub]), g.scores[sub]]); });
+        if (!coords.length) return;
+        if (coords.length > 1) s += `<polyline points="${coords.map((c) => c[0].toFixed(1) + ',' + c[1].toFixed(1)).join(' ')}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round"/>`;
+        coords.forEach(([cx, cy, v]) => {
+          const lx = Math.max(L + 8, Math.min(W - 10, cx + dx)); // 라벨이 잘리지 않게
+          s += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.5" fill="${color}"/><text x="${lx.toFixed(1)}" y="${(cy - 7).toFixed(1)}" text-anchor="middle" font-size="9" fill="${color}" font-weight="700">${v}</text>`;
+        });
+      });
+      s += '</svg>';
+      const legend = '<p class="radar-legend">' + TREND_SUBJECTS.map(([s2, c]) => `<span class="legend-dot" style="background:${c};margin-left:10px"></span> ${s2}`).join('') + '</p>';
+      return '<p class="sub-h" style="margin-top:18px">📈 국·수·영 성적 변화</p><div class="table-wrap">' + s + '</div>' + legend;
+    }
+
     function radarFor(name, size) {
       const g = latestGrade(name);
       if (!g) return null;
@@ -442,20 +481,24 @@
       $('dProfileCard').hidden = !rows.length;
       $('dProfile').innerHTML = rows.map(([k, v]) => `<div class="p-row"><span class="p-k">${k}</span><span class="p-v">${esc(v)}</span></div>`).join('');
 
-      // 성적 레이더 + 표
+      // 성적 레이더 + 표 + 국·수·영 변화 그래프
+      const list = gradeHistory(name);
       const r = radarFor(name, 280);
-      $('dGradeCard').hidden = !r;
-      if (r) {
-        $('dRadar').innerHTML = r.svg;
-        $('dGradeExam').textContent = r.exam;
-        const list = gradeHistory(name);
+      $('dGradeCard').hidden = !r && !list.length;
+      $('dRadar').innerHTML = r ? r.svg : '';
+      $('dRadarLegend').hidden = !r;
+      $('dGradeExam').textContent = r ? r.exam : '';
+      if (list.length) {
         const subs = [...new Set(list.flatMap((g) => Object.keys(g.scores)))];
         $('dGradeTable').innerHTML = `<table class="stats-table"><thead><tr><th>시험</th>${subs.map((s) => `<th>${esc(s)}</th>`).join('')}</tr></thead><tbody>` +
           list.map((g) => `<tr><td class="c-name">${esc(g.exam)}</td>${subs.map((s) => {
             const v = g.scores[s], a = g.avg[s];
             return `<td>${isFinite(v) ? `<b>${v}</b>${isFinite(a) ? `<span class="g-avg">평균 ${a}</span>` : ''}` : '—'}</td>`;
           }).join('')}</tr>`).join('') + '</tbody></table>';
+      } else {
+        $('dGradeTable').innerHTML = '';
       }
+      $('dTrend').innerHTML = trendBlock(list);
 
       // 상담카드 섹션
       const secs = Object.entries(SECTION_TITLES).filter(([id]) => p.sections && p.sections[id]);

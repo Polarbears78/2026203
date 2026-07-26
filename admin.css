@@ -179,6 +179,11 @@ textarea { resize: vertical; }
 .badge-watch { color: #b45309; background: #fef3c7; }
 
 .radar-wrap { display: flex; justify-content: center; }
+.trend-svg { width: 100%; height: auto; display: block; min-width: 420px; }
+.grade-flex { display: flex; gap: 28px; flex-wrap: wrap; align-items: center; }
+.grade-left { flex: 0 0 300px; margin: 0 auto; }
+.grade-right { flex: 1; min-width: 340px; }
+.grade-right .sub-h { margin-top: 0; }
 .radar-svg { width: 100%; height: auto; display: block; }
 .radar-legend { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: .78rem; color: var(--muted); margin: 8px 0 0; font-weight: 600; }
 .legend-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
