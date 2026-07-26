@@ -89,6 +89,7 @@
 
         <div class="row" style="margin-top:14px">
           <button class="btn btn-submit" id="weeklyPublish">📢 주간안내 게시</button>
+          <button class="btn btn-ghost" id="weeklyPdf">🖨️ PDF 저장</button>
           <span class="save-status" id="weeklyStatus" style="text-align:left;height:auto"></span>
         </div>
       </section>
@@ -424,6 +425,49 @@
       }), 2500);
     }
     $('weeklyPublish').addEventListener('click', () => { collectWeekly(); publish('weekly', weekly, $('weeklyStatus')); });
+
+    // ── 주간안내 PDF 저장 (인쇄용 창 → 브라우저에서 'PDF로 저장') ──
+    $('weeklyPdf').addEventListener('click', () => {
+      collectWeekly();
+      const w = weekly;
+      const win = window.open('', '_blank');
+      if (!win) { alert('팝업이 차단됐어요. 이 사이트의 팝업을 허용해 주세요.'); return; }
+      let h = `<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>주간안내 — 2학년 3반</title><style>
+        body{font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;padding:28px;color:#111;line-height:1.5}
+        h1{font-size:21px;margin:0 0 2px} .week{color:#555;font-size:13px;margin:0 0 18px}
+        h2{font-size:15px;margin:18px 0 8px;border-bottom:2px solid #333;padding-bottom:4px}
+        table{border-collapse:collapse;width:100%} th,td{border:1px solid #888;padding:6px 8px;font-size:12px;text-align:center}
+        th{background:#f0f0f0} ul{margin:6px 0;padding-left:20px;font-size:13px} li{margin-bottom:4px}
+        .ev b{display:inline-block;min-width:88px}
+      </style></head><body>`;
+      h += `<h1>2학년 3반 주간안내</h1><p class="week">${esc(w.week || '')}</p>`;
+      const evs = (w.events || []).filter((e2) => e2.day.trim() || e2.text.trim());
+      if (evs.length) {
+        h += '<h2>1. 이번 주 주요 일정</h2><ul>' + evs.map((e2) => `<li class="ev"><b>${esc(e2.day)}</b> ${esc(e2.text)}</li>`).join('') + '</ul>';
+      }
+      const hasTT = (w.timetable || []).some((row) => (row || []).some((v) => v && v.trim()));
+      if (hasTT) {
+        h += '<h2>2. 주간 시간표</h2><table><tr><th>교시</th>' + w.days.map((d) => `<th>${esc(d)}</th>`).join('') + '</tr>';
+        w.timetable.forEach((row, p) => {
+          if (!(row || []).some((v) => v && v.trim())) return;
+          h += `<tr><th>${p + 1}</th>` + w.days.map((_, d2) => `<td>${esc((row || [])[d2] || '')}</td>`).join('') + '</tr>';
+        });
+        h += '</table>';
+      }
+      const duties = (w.duties || []).filter((d2) => d2.area.trim() || d2.who.trim());
+      if (duties.length) {
+        h += '<h2>3. 학급 주간 청소</h2><table><tr><th>구역</th><th>담당</th></tr>' +
+          duties.map((d2) => `<tr><td>${esc(d2.area)}</td><td>${esc(d2.who)}</td></tr>`).join('') + '</table>';
+      }
+      if ((w.notes || []).length) {
+        h += '<h2>4. 유의사항</h2><ul>' + w.notes.map((n) => `<li>${esc(n)}</li>`).join('') + '</ul>';
+      }
+      h += '</body></html>';
+      win.document.write(h);
+      win.document.close();
+      win.focus();
+      setTimeout(() => win.print(), 300);
+    });
     $('noticePublish').addEventListener('click', () => {
       collectNotices();
       publish('notice', { notices: notices.filter((n) => n.title.trim() || n.text.trim()) }, $('noticeStatus'));

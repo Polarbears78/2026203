@@ -98,6 +98,14 @@
       </a>
     </section>
 
+    <!-- 새 소식 알림 -->
+    <section class="card notify-card" id="notifyCard" hidden>
+      <h2 class="card-title">🔔 새 소식 알림</h2>
+      <p class="install-desc">공지 · 주간안내 · 게시판이 업데이트되면 알림으로 알려드려요!</p>
+      <button class="btn btn-block" id="notifyBtn">알림 켜기 🔔</button>
+      <p class="note" id="notifyStatus" style="margin:8px 0 0"></p>
+    </section>
+
     <!-- 앱 설치 안내 -->
     <section class="card install-card" id="installCard" hidden>
       <h2 class="card-title">📲 앱으로 설치하기</h2>
@@ -193,6 +201,39 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
     }
+
+    // ── 새 소식 알림 켜기 ──
+    (function () {
+      if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+      const card = document.getElementById('notifyCard');
+      const btn = document.getElementById('notifyBtn');
+      const st = document.getElementById('notifyStatus');
+      card.hidden = false;
+
+      const refresh = async () => {
+        if (Notification.permission === 'granted') {
+          btn.hidden = true;
+          const reg = await navigator.serviceWorker.ready;
+          let periodic = false;
+          if ('periodicSync' in reg) {
+            try { await reg.periodicSync.register('content-check', { minInterval: 6 * 60 * 60 * 1000 }); periodic = true; } catch {}
+          }
+          st.textContent = periodic
+            ? '✓ 알림이 켜져 있어요. 새 소식이 오면 자동으로 알려드릴게요!'
+            : '✓ 알림이 켜져 있어요. 앱을 열 때 새 소식을 확인해 드려요. (자동 알림은 안드로이드에서 홈 화면에 앱을 설치하면 돼요)';
+          if (reg.active) reg.active.postMessage('check-updates');
+        } else if (Notification.permission === 'denied') {
+          btn.hidden = true;
+          st.textContent = '알림이 차단되어 있어요. 브라우저 설정에서 이 사이트의 알림을 허용해 주세요.';
+        }
+      };
+      btn.addEventListener('click', async () => {
+        const p = await Notification.requestPermission();
+        if (p === 'granted') refresh();
+        else st.textContent = '알림 권한이 허용되지 않았어요.';
+      });
+      navigator.serviceWorker.ready.then(refresh).catch(() => {});
+    })();
 
     // ── 앱 설치 안내 ──
     (function () {

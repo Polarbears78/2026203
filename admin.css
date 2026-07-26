@@ -325,3 +325,14 @@ textarea { resize: vertical; }
   font-size: 1.1rem; font-weight: 800; cursor: pointer; flex: 0 0 42px;
 }
 .chat-send:hover { background: var(--accent-dark); }
+
+/* ===== 인쇄(PDF 저장) ===== */
+@media print {
+  .nav, .foot, .back-btn, .no-print, .chat-fab, .chat-panel, .toolbar { display: none !important; }
+  body { background: #fff; }
+  .container { padding: 0; max-width: none; }
+  .card { box-shadow: none; border-color: #cbd5e1; break-inside: avoid; margin-bottom: 12px; }
+  .manage-grid { display: block; }
+  .manage-grid .card { margin-bottom: 12px; }
+  textarea, input, select { border: none; padding: 0; resize: none; }
+}

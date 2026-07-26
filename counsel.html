@@ -55,6 +55,9 @@
 
       <div class="toolbar">
         <input type="text" id="search" placeholder="학생 이름 검색…" />
+        <select id="studentJump" style="max-width:200px;width:auto">
+          <option value="">학생 선택 ▾</option>
+        </select>
         <span class="note" id="gridCount" style="margin:0"></span>
       </div>
       <div class="student-grid" id="studentGrid"></div>
@@ -71,6 +74,7 @@
           <div class="sc-meta" id="dMeta"></div>
         </div>
         <span id="dBadge" style="margin-left:auto"></span>
+        <button class="btn btn-ghost no-print" id="pdfBtn">🖨️ PDF 저장</button>
       </div>
 
       <div class="manage-grid">
@@ -95,7 +99,7 @@
         </section>
 
         <!-- 새 상담 기록 -->
-        <section class="card">
+        <section class="card no-print">
           <h2 class="card-title">새 상담 기록</h2>
           <div class="log-grid" style="margin-bottom:12px">
             <div class="field">
@@ -166,6 +170,22 @@
     let profiles = load(PROFILE_KEY, {});
     let gradesMap = load(GRADE_KEY, {});
     let current = null;
+
+    // 상담카드 양식의 성적은 1학년 때 성적 — 라벨에 학년을 표기
+    Object.values(gradesMap).forEach((list) => list.forEach((g) => { if (!/^1학년/.test(g.exam)) g.exam = '1학년 ' + g.exam; }));
+    // 성적 페이지(grades-data)에서 가져온 올해(2학년) 성적과 합쳐 학생별 성적 이력 구성
+    const gradesDb = load('grades-data', { exams: [] });
+    function gradeHistory(name) {
+      const hist = (gradesMap[name] || []).slice();
+      gradesDb.exams.forEach((ex) => {
+        const row = ex.scores && ex.scores[name];
+        if (!row || !Object.keys(row).length) return;
+        const avg = {};
+        Object.keys(row).forEach((s) => { if (ex.avg && isFinite(ex.avg[s])) avg[s] = ex.avg[s]; });
+        hist.push({ exam: '2학년 ' + ex.name, scores: row, avg });
+      });
+      return hist;
+    }
 
     // ══════════ 엑셀 가져오기 ══════════
     $('importBtn').addEventListener('click', () => {
@@ -261,7 +281,7 @@
           }
         });
         const gradeList = EXAM_ORDER.filter((ex) => exams[ex] && Object.keys(exams[ex].scores).length)
-          .map((ex) => ({ exam: ex, scores: exams[ex].scores, avg: exams[ex].avg }));
+          .map((ex) => ({ exam: '1학년 ' + ex, scores: exams[ex].scores, avg: exams[ex].avg }));
 
         profiles[p.name] = p;
         if (gradeList.length) gradesMap[p.name] = gradeList;
@@ -278,12 +298,11 @@
 
     // ══════════ 레이더 차트 (SVG) ══════════
     function latestGrade(name) {
-      const list = gradesMap[name];
-      if (!list || !list.length) return null;
-      return list[list.length - 1];
+      const list = gradeHistory(name);
+      return list.length ? list[list.length - 1] : null;
     }
     function statusOf(name) {
-      const list = gradesMap[name] || [];
+      const list = gradeHistory(name);
       // 과목평균이 함께 있는 가장 최근 시험으로 판정
       for (let i = list.length - 1; i >= 0; i--) {
         const g = list[i];
@@ -371,8 +390,22 @@
       }).join('');
       $('gridEmpty').classList.toggle('hidden', names.length > 0);
       $('gridCount').textContent = names.length ? `${names.length}명` : '';
+      renderJump();
     }
     $('search').addEventListener('input', renderGrid);
+    function renderJump() {
+      const names = allNames().slice().sort((a, b) => ((profiles[a]?.no ?? 999) - (profiles[b]?.no ?? 999)) || a.localeCompare(b));
+      $('studentJump').innerHTML = '<option value="">학생 선택 ▾</option>' + names.map((n) => {
+        const no = profiles[n]?.no;
+        return `<option value="${esc(n)}">${no ? no + '번 ' : ''}${esc(n)}</option>`;
+      }).join('');
+    }
+    $('studentJump').addEventListener('change', () => {
+      const n = $('studentJump').value;
+      if (n) { openDetail(n); $('studentJump').value = ''; }
+    });
+    // PDF 저장 — 브라우저 인쇄 대화상자에서 'PDF로 저장' 선택
+    $('pdfBtn').addEventListener('click', () => window.print());
     $('studentGrid').addEventListener('click', (e) => {
       const btn = e.target.closest('[data-name]');
       if (btn) openDetail(btn.getAttribute('data-name'));
@@ -415,7 +448,7 @@
       if (r) {
         $('dRadar').innerHTML = r.svg;
         $('dGradeExam').textContent = r.exam;
-        const list = gradesMap[name] || [];
+        const list = gradeHistory(name);
         const subs = [...new Set(list.flatMap((g) => Object.keys(g.scores)))];
         $('dGradeTable').innerHTML = `<table class="stats-table"><thead><tr><th>시험</th>${subs.map((s) => `<th>${esc(s)}</th>`).join('')}</tr></thead><tbody>` +
           list.map((g) => `<tr><td class="c-name">${esc(g.exam)}</td>${subs.map((s) => {
