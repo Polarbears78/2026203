@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ff9ecd" />
+  <title>2학년 3반 안내</title>
+  <meta name="description" content="2학년 3반 주간안내와 자유복의 날을 확인하는 페이지" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="2-3 안내" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8B%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>📋 2학년 3반 안내</h1>
+    <p class="subtitle">육민관중학교</p>
+  </header>
+
+  <main class="container">
+    <!-- 오늘의 급식 -->
+    <section class="card meal-card" id="mealCard">
+      <div class="meal-head">
+        <h2 class="meal-title">🍚 오늘의 급식</h2>
+        <span class="meal-date" id="mealDate">—</span>
+      </div>
+      <ul class="meal-dishes" id="mealDishes"><li class="meal-loading">불러오는 중…</li></ul>
+      <p class="meal-kcal" id="mealKcal"></p>
+    </section>
+
+    <p class="menu-lead">무엇을 확인할까요?</p>
+
+    <a class="menu-card menu-board" href="board.html">
+      <span class="menu-emoji" aria-hidden="true">💬</span>
+      <span class="menu-text">
+        <b>우리 반 게시판</b>
+        <small>친구들과 자유롭게 글 남기기</small>
+      </span>
+      <span class="menu-arrow" aria-hidden="true">›</span>
+    </a>
+
+    <a class="menu-card menu-weekly" href="weekly.html">
+      <span class="menu-emoji" aria-hidden="true">🗓️</span>
+      <span class="menu-text">
+        <b>주간안내</b>
+        <small>이번 주 일정 · 시간표 · 청소 당번</small>
+      </span>
+      <span class="menu-arrow" aria-hidden="true">›</span>
+    </a>
+
+    <a class="menu-card menu-study" href="study-log.html">
+      <span class="menu-emoji" aria-hidden="true">📚</span>
+      <span class="menu-text">
+        <b>방학 학습 기록</b>
+        <small>매일 국어·수학·영어 학습량 기록</small>
+      </span>
+      <span class="menu-arrow" aria-hidden="true">›</span>
+    </a>
+
+    <!-- 학교생활 소감 설문: 숨김 (필요 시 이 블록의 주석을 해제하세요)
+    <a class="menu-card menu-survey" href="survey.html">
+      <span class="menu-emoji" aria-hidden="true">✍️</span>
+      <span class="menu-text">
+        <b>학교생활 소감 설문</b>
+        <small>1학기 생기부 기초 자료 작성</small>
+      </span>
+      <span class="menu-arrow" aria-hidden="true">›</span>
+    </a>
+    -->
+
+    <a class="menu-card menu-free" href="jayubok.html">
+      <span class="menu-emoji" aria-hidden="true">👕</span>
+      <span class="menu-text">
+        <b>자유복의 날</b>
+        <small>다음 자유복 입는 날 D-day 자동 확인</small>
+      </span>
+      <span class="menu-arrow" aria-hidden="true">›</span>
+    </a>
+
+    <!-- 다른 페이지 바로가기 -->
+    <section class="card link-card">
+      <a class="link-row" href="https://open.kakao.com/o/gIts53ui" target="_blank" rel="noopener">
+        <span class="link-emoji" aria-hidden="true">💬</span>
+        <span class="link-text">
+          <b>카카오톡 오픈채팅</b>
+          <small>2학년 3반 채팅방 입장</small>
+        </span>
+        <span class="link-arrow" aria-hidden="true">↗</span>
+      </a>
+    </section>
+
+    <!-- 앱 설치 안내 -->
+    <section class="card install-card" id="installCard" hidden>
+      <h2 class="card-title">📲 앱으로 설치하기</h2>
+      <p class="install-desc">홈 화면에 추가하면 주소창 없이 <b>앱처럼</b> 바로 열 수 있어요!</p>
+      <button class="btn btn-block" id="installBtn" hidden>홈 화면에 앱 설치 💗</button>
+      <div class="install-ios" id="installIos" hidden>
+        <p class="ios-step">아이폰은 이렇게 설치해요 👇</p>
+        <ol class="ios-list">
+          <li>사파리(Safari) 아래 <b>공유 <span class="ios-share">⬆︎</span></b> 버튼 누르기</li>
+          <li><b>‘홈 화면에 추가’</b> 선택 → <b>추가</b></li>
+        </ol>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <span>육민관중학교 2학년 3반 💗</span>
+    </footer>
+  </main>
+
+  <script>
+    // 오늘의 급식 표시
+    (function () {
+      const pad = (n) => String(n).padStart(2, '0');
+      const t = new Date();
+      const todayISO = `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
+      const dishesEl = document.getElementById('mealDishes');
+      const dateEl = document.getElementById('mealDate');
+      const kcalEl = document.getElementById('mealKcal');
+
+      const fmt = (isoStr) => {
+        const [y, m, d] = isoStr.split('-').map(Number);
+        const wd = ['일', '월', '화', '수', '목', '금', '토'][new Date(y, m - 1, d).getDay()];
+        return `${m}월 ${d}일 (${wd})`;
+      };
+      const render = (meal, isToday) => {
+        dateEl.textContent = (isToday ? '' : '다음 급식 · ') + fmt(meal.date);
+        dishesEl.innerHTML = '';
+        meal.dishes.forEach((name) => {
+          const li = document.createElement('li');
+          li.textContent = name;
+          dishesEl.appendChild(li);
+        });
+        kcalEl.textContent = meal.kcal ? meal.kcal + ' kcal' : '';
+      };
+
+      fetch('menu.json', { cache: 'no-store' })
+        .then((r) => r.json())
+        .then((data) => {
+          const meals = (data.meals || []).filter((m) => m.type === '중식' || !m.type);
+          const today = meals.find((m) => m.date === todayISO);
+          if (today) { render(today, true); return; }
+          const next = meals.find((m) => m.date > todayISO);
+          if (next) { render(next, false); return; }
+          dateEl.textContent = todayISO ? fmt(todayISO) : '';
+          dishesEl.innerHTML = '<li class="meal-none">오늘은 급식이 없어요</li>';
+        })
+        .catch(() => {
+          dishesEl.innerHTML = '<li class="meal-none">급식 정보를 불러오지 못했어요</li>';
+        });
+    })();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+
+    // ── 앱 설치 안내 ──
+    (function () {
+      const card = document.getElementById('installCard');
+      const btn = document.getElementById('installBtn');
+      const ios = document.getElementById('installIos');
+      const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      if (standalone) return; // 이미 설치됨 → 숨김
+
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      let deferred = null;
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferred = e;
+        btn.hidden = false;
+        card.hidden = false;
+      });
+      btn.addEventListener('click', async () => {
+        if (!deferred) return;
+        deferred.prompt();
+        await deferred.userChoice;
+        deferred = null;
+        card.hidden = true;
+      });
+      window.addEventListener('appinstalled', () => { card.hidden = true; });
+
+      // iOS는 beforeinstallprompt가 없으므로 안내문 표시
+      if (isIOS) { ios.hidden = false; card.hidden = false; }
+    })();
+  </script>
+</body>
+</html>
