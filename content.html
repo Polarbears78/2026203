@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#4f46e5" />
+  <title>콘텐츠 관리 — 2학년 3반 관리 콘솔</title>
+  <meta name="description" content="주간안내·공지사항을 편집해 학생용 웹 앱에 게시" />
+  <link rel="stylesheet" href="admin.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%A2%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="admin.html">2학년 3반 <span>관리 콘솔</span></a>
+      <nav class="nav-links">
+        <a href="admin.html">대시보드</a>
+        <a href="counsel.html">학생·상담</a>
+        <a href="grades.html">성적</a>
+        <a href="manage.html">학급 도구</a>
+        <a href="content.html" class="active">콘텐츠</a>
+        <a href="index.html" class="nav-student">학생용 페이지 ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="page-head">
+      <h1>콘텐츠 관리</h1>
+      <p>주간안내와 공지사항을 편집해 <b>학생용 웹 앱에 게시</b>합니다. 게시하면 구글 시트를 통해 모든 학생 화면에 즉시 반영됩니다.</p>
+    </div>
+
+    <!-- 게시 설정 -->
+    <section class="card">
+      <h2 class="card-title">게시 설정</h2>
+      <div class="row" style="flex-wrap:wrap">
+        <label class="inline-label" for="adminKey">관리자 키</label>
+        <input type="password" id="adminKey" placeholder="Apps Script에 등록한 ADMIN_KEY" style="max-width:280px" autocomplete="off" />
+        <span class="note" id="keyStatus" style="margin:0"></span>
+      </div>
+      <details style="margin-top:12px">
+        <summary style="cursor:pointer;font-size:.85rem;font-weight:600;color:var(--muted)">처음 설정하는 방법 (1회)</summary>
+        <ol class="steps" style="margin-top:10px;font-size:.88rem">
+          <li>구글 시트 → <b>확장 프로그램 → Apps Script</b>를 열고, 저장소의 최신 <code>Code.gs</code> 내용으로 교체합니다.</li>
+          <li>Apps Script 왼쪽 <b>⚙️ 프로젝트 설정 → 스크립트 속성</b>에서 속성 <code>ADMIN_KEY</code>를 추가하고 원하는 비밀번호를 값으로 저장합니다.</li>
+          <li><b>배포 → 배포 관리</b>에서 기존 배포를 <b>새 버전</b>으로 업데이트합니다.</li>
+          <li>위 입력칸에 같은 비밀번호를 입력하면 게시할 수 있습니다. 키는 이 컴퓨터에만 저장됩니다.</li>
+        </ol>
+      </details>
+    </section>
+
+    <div class="manage-grid">
+      <!-- 주간안내 편집 -->
+      <section class="card span-2">
+        <div class="board-head" style="margin:0 0 6px">
+          <h2 class="card-title" style="margin:0">주간안내 편집</h2>
+          <span class="tag" id="weeklyUpdated"></span>
+        </div>
+        <p class="help">학생용 <b>주간안내</b> 페이지에 표시되는 내용입니다. 입력하는 동안 이 컴퓨터에 자동 저장되고, [게시]를 눌러야 웹 앱에 반영됩니다.</p>
+
+        <div class="field">
+          <label for="wWeek">주간 표시 (예: 7/13(월) ~ 7/18(토))</label>
+          <input type="text" id="wWeek" maxlength="60" />
+        </div>
+
+        <p class="sub-h">이번 주 주요 일정</p>
+        <div id="evRows"></div>
+        <button class="btn btn-ghost" id="evAdd" style="margin-bottom:16px">+ 일정 추가</button>
+
+        <p class="sub-h">주간 시간표 <span class="opt">(빈칸은 표시되지 않음)</span></p>
+        <div class="table-wrap">
+          <table class="stats-table score-table" id="ttTable"></table>
+        </div>
+
+        <p class="sub-h" style="margin-top:16px">학급 주간 청소</p>
+        <div id="dutyRows"></div>
+        <button class="btn btn-ghost" id="dutyAdd" style="margin-bottom:16px">+ 구역 추가</button>
+
+        <div class="field">
+          <label for="wNotes">유의사항 <span class="opt">(줄바꿈으로 구분)</span></label>
+          <textarea id="wNotes" rows="3"></textarea>
+        </div>
+
+        <div class="row" style="margin-top:14px">
+          <button class="btn btn-submit" id="weeklyPublish">📢 주간안내 게시</button>
+          <span class="save-status" id="weeklyStatus" style="text-align:left;height:auto"></span>
+        </div>
+      </section>
+
+      <!-- 공지사항 편집 -->
+      <section class="card span-2">
+        <div class="board-head" style="margin:0 0 6px">
+          <h2 class="card-title" style="margin:0">공지사항 편집</h2>
+          <span class="tag" id="noticeUpdated"></span>
+        </div>
+        <p class="help">학생용 홈 상단에 표시되는 공지입니다. 게시된 공지가 없으면 학생 화면에 공지 카드가 나타나지 않습니다.</p>
+        <div id="ntRows"></div>
+        <button class="btn btn-ghost" id="ntAdd">+ 공지 추가</button>
+        <div class="row" style="margin-top:14px">
+          <button class="btn btn-submit" id="noticePublish">📢 공지사항 게시</button>
+          <span class="save-status" id="noticeStatus" style="text-align:left;height:auto"></span>
+        </div>
+      </section>
+    </div>
+
+    <footer class="foot"><span>게시 전 초안은 이 컴퓨터에만 저장됩니다 · 게시하면 구글 시트를 통해 학생용 웹 앱에 반영됩니다</span></footer>
+  </main>
+
+  <script>
+    const ENDPOINT = 'https://script.google.com/macros/s/AKfycby9POET85dvQoraZRfvx4XvAdWX-ZN3xWkVIQPCyQeDp3TwRyvURm1aqhEYfcqv48IG/exec';
+    const $ = (id) => document.getElementById(id);
+    const load = (k, fb) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fb; } catch { return fb; } };
+    const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const KEY_DRAFT_W = 'content-weekly-draft', KEY_DRAFT_N = 'content-notice-draft', KEY_ADMIN = 'content-admin-key';
+    const PERIODS = 7, DAYS = 5;
+
+    const DEFAULT_WEEKLY = {
+      week: '', days: ['월', '화', '수', '목', '금'],
+      events: [{ day: '', text: '' }],
+      timetable: Array.from({ length: PERIODS }, () => ['', '', '', '', '']),
+      duties: [{ area: '', who: '' }],
+      notes: [],
+    };
+
+    let weekly = load(KEY_DRAFT_W, null);
+    let notices = load(KEY_DRAFT_N, null); // [{date,title,text}]
+    let published = { weekly: null, notice: null };
+
+    // ── 관리자 키 ──
+    $('adminKey').value = load(KEY_ADMIN, '');
+    $('adminKey').addEventListener('input', () => { save(KEY_ADMIN, $('adminKey').value); $('keyStatus').textContent = '저장됨 (이 컴퓨터에만)'; });
+
+    // ── 주간안내 편집 UI ──
+    function renderWeekly() {
+      const w = weekly;
+      $('wWeek').value = w.week || '';
+      $('evRows').innerHTML = w.events.map((e, i) => `
+        <div class="row" style="margin-bottom:8px">
+          <input type="text" data-ev-day="${i}" value="${esc(e.day)}" placeholder="요일 (예: 월 (7/13))" style="max-width:160px" />
+          <input type="text" data-ev-text="${i}" value="${esc(e.text)}" placeholder="일정 내용" />
+          <button class="del-btn" data-ev-del="${i}">삭제</button>
+        </div>`).join('');
+      let tt = '<thead><tr><th>교시</th>' + w.days.map((d, i) => `<th><input type="text" data-day="${i}" value="${esc(d)}" style="width:90px;text-align:center" /></th>`).join('') + '</tr></thead><tbody>';
+      for (let p = 0; p < PERIODS; p++) {
+        tt += `<tr><td class="c-num">${p + 1}</td>` + w.days.map((_, d) =>
+          `<td><input type="text" class="score-in" style="width:90px" data-tt="${p}-${d}" value="${esc((w.timetable[p] || [])[d] || '')}" /></td>`).join('') + '</tr>';
+      }
+      $('ttTable').innerHTML = tt + '</tbody>';
+      $('dutyRows').innerHTML = w.duties.map((d, i) => `
+        <div class="row" style="margin-bottom:8px">
+          <input type="text" data-duty-area="${i}" value="${esc(d.area)}" placeholder="구역 (예: 바닥 쓸기)" style="max-width:200px" />
+          <input type="text" data-duty-who="${i}" value="${esc(d.who)}" placeholder="담당 (예: 3 김시연, 4 김재준)" />
+          <button class="del-btn" data-duty-del="${i}">삭제</button>
+        </div>`).join('');
+      $('wNotes').value = (w.notes || []).join('\n');
+    }
+    function collectWeekly() {
+      weekly.week = $('wWeek').value.trim();
+      document.querySelectorAll('[data-day]').forEach((el) => { weekly.days[Number(el.dataset.day)] = el.value.trim() || weekly.days[Number(el.dataset.day)]; });
+      document.querySelectorAll('[data-ev-day]').forEach((el) => { weekly.events[Number(el.dataset.evDay)].day = el.value; });
+      document.querySelectorAll('[data-ev-text]').forEach((el) => { weekly.events[Number(el.dataset.evText)].text = el.value; });
+      document.querySelectorAll('[data-tt]').forEach((el) => {
+        const [p, d] = el.dataset.tt.split('-').map(Number);
+        (weekly.timetable[p] = weekly.timetable[p] || ['', '', '', '', ''])[d] = el.value.trim();
+      });
+      document.querySelectorAll('[data-duty-area]').forEach((el) => { weekly.duties[Number(el.dataset.dutyArea)].area = el.value; });
+      document.querySelectorAll('[data-duty-who]').forEach((el) => { weekly.duties[Number(el.dataset.dutyWho)].who = el.value; });
+      weekly.notes = $('wNotes').value.split('\n').map((s) => s.trim()).filter(Boolean);
+      save(KEY_DRAFT_W, weekly);
+    }
+    document.querySelector('main').addEventListener('input', (e) => {
+      if (e.target.closest('#evRows, #ttTable, #dutyRows') || ['wWeek', 'wNotes'].includes(e.target.id)) collectWeekly();
+      if (e.target.closest('#ntRows')) collectNotices();
+    });
+    $('evAdd').addEventListener('click', () => { collectWeekly(); weekly.events.push({ day: '', text: '' }); save(KEY_DRAFT_W, weekly); renderWeekly(); });
+    $('dutyAdd').addEventListener('click', () => { collectWeekly(); weekly.duties.push({ area: '', who: '' }); save(KEY_DRAFT_W, weekly); renderWeekly(); });
+    $('evRows').addEventListener('click', (e) => {
+      const i = e.target.getAttribute('data-ev-del');
+      if (i === null) return;
+      collectWeekly(); weekly.events.splice(Number(i), 1);
+      if (!weekly.events.length) weekly.events.push({ day: '', text: '' });
+      save(KEY_DRAFT_W, weekly); renderWeekly();
+    });
+    $('dutyRows').addEventListener('click', (e) => {
+      const i = e.target.getAttribute('data-duty-del');
+      if (i === null) return;
+      collectWeekly(); weekly.duties.splice(Number(i), 1);
+      if (!weekly.duties.length) weekly.duties.push({ area: '', who: '' });
+      save(KEY_DRAFT_W, weekly); renderWeekly();
+    });
+
+    // ── 공지 편집 UI ──
+    function renderNotices() {
+      $('ntRows').innerHTML = notices.map((n, i) => `
+        <div class="rec" style="margin-bottom:10px">
+          <div class="row" style="margin-bottom:8px">
+            <input type="date" data-nt-date="${i}" value="${esc(n.date)}" style="max-width:170px" />
+            <input type="text" data-nt-title="${i}" value="${esc(n.title)}" placeholder="공지 제목" />
+            <button class="del-btn" data-nt-del="${i}">삭제</button>
+          </div>
+          <textarea data-nt-text="${i}" rows="2" placeholder="공지 내용">${esc(n.text)}</textarea>
+        </div>`).join('');
+    }
+    function collectNotices() {
+      document.querySelectorAll('[data-nt-date]').forEach((el) => { notices[Number(el.dataset.ntDate)].date = el.value; });
+      document.querySelectorAll('[data-nt-title]').forEach((el) => { notices[Number(el.dataset.ntTitle)].title = el.value; });
+      document.querySelectorAll('[data-nt-text]').forEach((el) => { notices[Number(el.dataset.ntText)].text = el.value; });
+      save(KEY_DRAFT_N, notices);
+    }
+    const pad = (n) => String(n).padStart(2, '0');
+    const todayISO = () => { const t = new Date(); return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`; };
+    $('ntAdd').addEventListener('click', () => { collectNotices(); notices.push({ date: todayISO(), title: '', text: '' }); save(KEY_DRAFT_N, notices); renderNotices(); });
+    $('ntRows').addEventListener('click', (e) => {
+      const i = e.target.getAttribute('data-nt-del');
+      if (i === null) return;
+      collectNotices(); notices.splice(Number(i), 1); save(KEY_DRAFT_N, notices); renderNotices();
+    });
+
+    // ── 게시(발행) ──
+    function fetchContent(cb) {
+      const cbName = 'onContent' + Math.floor(performance.now());
+      window[cbName] = (res) => { delete window[cbName]; s.remove(); cb(res); };
+      const s = document.createElement('script');
+      s.src = ENDPOINT + '?action=content&callback=' + cbName + '&_=' + String(performance.now()).replace('.', '');
+      s.onerror = () => { delete window[cbName]; s.remove(); cb(null); };
+      document.body.appendChild(s);
+    }
+    async function publish(kind, data, statusEl) {
+      const key = $('adminKey').value.trim();
+      if (!key) { alert('먼저 관리자 키를 입력해 주세요. (게시 설정 참고)'); return; }
+      statusEl.textContent = '게시 중…'; statusEl.style.color = '';
+      const before = published[kind]?.updated || '';
+      try {
+        await fetch(ENDPOINT, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ type: 'publish', key, kind, data }) });
+      } catch (e) {
+        statusEl.textContent = '⚠ 전송 실패 — 인터넷 연결을 확인해 주세요.'; statusEl.style.color = 'var(--danger)';
+        return;
+      }
+      statusEl.textContent = '게시 확인 중…';
+      setTimeout(() => fetchContent((res) => {
+        const cur = res && res.ok && res.content && res.content[kind];
+        if (cur && cur.updated && cur.updated !== before) {
+          published[kind] = cur;
+          statusEl.textContent = '✓ 웹 앱에 게시되었습니다 (' + cur.updated + ')';
+          statusEl.style.color = '';
+          renderUpdated();
+        } else {
+          statusEl.textContent = '⚠ 반영이 확인되지 않았습니다 — 관리자 키와 Apps Script 배포(새 버전)를 확인해 주세요.';
+          statusEl.style.color = 'var(--danger)';
+        }
+      }), 2500);
+    }
+    $('weeklyPublish').addEventListener('click', () => { collectWeekly(); publish('weekly', weekly, $('weeklyStatus')); });
+    $('noticePublish').addEventListener('click', () => {
+      collectNotices();
+      publish('notice', { notices: notices.filter((n) => n.title.trim() || n.text.trim()) }, $('noticeStatus'));
+    });
+
+    function renderUpdated() {
+      $('weeklyUpdated').textContent = published.weekly?.updated ? '게시됨 · ' + published.weekly.updated : '아직 게시 안 됨';
+      $('noticeUpdated').textContent = published.notice?.updated ? '게시됨 · ' + published.notice.updated : '아직 게시 안 됨';
+    }
+
+    // ── 초기화: 초안 → 게시본 → 기본값 순 ──
+    function init() {
+      fetchContent((res) => {
+        if (res && res.ok && res.content) {
+          published.weekly = res.content.weekly || null;
+          published.notice = res.content.notice || null;
+        }
+        if (!weekly) weekly = (published.weekly && published.weekly.data && published.weekly.data.days) ? published.weekly.data : structuredClone(DEFAULT_WEEKLY);
+        if (!notices) notices = (published.notice && published.notice.data && published.notice.data.notices) || [];
+        if (!weekly.events || !weekly.events.length) weekly.events = [{ day: '', text: '' }];
+        if (!weekly.duties || !weekly.duties.length) weekly.duties = [{ area: '', who: '' }];
+        renderWeekly(); renderNotices(); renderUpdated();
+      });
+      // 네트워크가 늦어도 편집은 가능하게
+      setTimeout(() => {
+        if (!weekly) { weekly = structuredClone(DEFAULT_WEEKLY); renderWeekly(); }
+        if (!notices) { notices = []; renderNotices(); }
+      }, 4000);
+    }
+    init();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>
