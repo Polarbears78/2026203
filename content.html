@@ -58,12 +58,6 @@
         </div>
         <p class="help">학생용 <b>주간안내</b> 페이지에 표시되는 내용입니다. 입력하는 동안 이 컴퓨터에 자동 저장되고, [게시]를 눌러야 웹 앱에 반영됩니다.</p>
 
-        <div class="row" style="margin-bottom:16px;flex-wrap:wrap">
-          <input type="file" id="hwpxFile" accept=".hwpx" hidden />
-          <button class="btn btn-ghost" id="hwpxBtn">📄 한글(hwpx) 주간안내 불러오기</button>
-          <span class="note" id="hwpxStatus" style="margin:0"></span>
-        </div>
-
         <div class="field">
           <label for="wWeek">주간 표시 (예: 7/13(월) ~ 7/18(토))</label>
           <input type="text" id="wWeek" maxlength="60" />
@@ -112,7 +106,6 @@
     <footer class="foot"><span>게시 전 초안은 이 컴퓨터에만 저장됩니다 · 게시하면 구글 시트를 통해 학생용 웹 앱에 반영됩니다</span></footer>
   </main>
 
-  <script src="vendor/fflate.min.js" defer></script>
   <script>
     const ENDPOINT = 'https://script.google.com/macros/s/AKfycby9POET85dvQoraZRfvx4XvAdWX-ZN3xWkVIQPCyQeDp3TwRyvURm1aqhEYfcqv48IG/exec';
     const $ = (id) => document.getElementById(id);
@@ -196,171 +189,6 @@
       if (!weekly.duties.length) weekly.duties.push({ area: '', who: '' });
       save(KEY_DRAFT_W, weekly); renderWeekly();
     });
-
-    // ── 한글(HWPX) 주간안내 불러오기 ──
-    // hwpx는 ZIP 안에 OWPML XML(Contents/sectionN.xml)이 들어 있는 형식.
-    // 브라우저 안에서만 해석하며, 파일이 외부로 전송되지 않는다.
-    $('hwpxBtn').addEventListener('click', () => {
-      if (typeof fflate === 'undefined') { alert('파일 파서를 아직 불러오는 중입니다. 잠시 후 다시 시도해 주세요.'); return; }
-      $('hwpxFile').click();
-    });
-    $('hwpxFile').addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      if (/\.hwp$/i.test(file.name)) { alert('.hwp(구버전) 파일은 읽을 수 없습니다.\n한글에서 [파일 → 다른 이름으로 저장 → HWPX] 형식으로 저장한 뒤 다시 선택해 주세요.'); e.target.value = ''; return; }
-      try {
-        const buf = new Uint8Array(await file.arrayBuffer());
-        const zip = fflate.unzipSync(buf);
-        const xmls = Object.keys(zip).filter((p) => /Contents\/section\d+\.xml$/i.test(p)).sort();
-        if (!xmls.length) throw new Error('본문 XML을 찾지 못했습니다. hwpx 형식이 맞는지 확인해 주세요.');
-        const dec = new TextDecoder('utf-8');
-        const tables = [], lines = [];
-        xmls.forEach((p) => parseHwpxSection(dec.decode(zip[p]), tables, lines));
-        const found = applyWeeklyFromHwpx(tables, lines, file.name);
-        save(KEY_DRAFT_W, weekly);
-        renderWeekly();
-        const parts = [];
-        if (found.week) parts.push('주간 표시');
-        if (found.periods) parts.push(`시간표 ${found.periods}교시`);
-        if (found.events) parts.push(`일정 ${found.events}건`);
-        if (found.duties) parts.push(`청소 ${found.duties}구역`);
-        if (found.notes) parts.push(`유의사항 ${found.notes}줄`);
-        $('hwpxStatus').textContent = parts.length
-          ? `✓ 인식됨: ${parts.join(' · ')} — 아래 내용을 확인한 뒤 [주간안내 게시]를 눌러 주세요.`
-          : '⚠ 주간안내 형식을 인식하지 못했습니다. 표(시간표·일정)가 있는 문서인지 확인해 주세요.';
-      } catch (err) {
-        alert('한글 파일을 읽지 못했습니다: ' + err.message);
-      }
-      e.target.value = '';
-    });
-
-    function parseHwpxSection(xmlText, tables, lines) {
-      const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
-      const hasAncestor = (el, name) => { for (let n = el.parentNode; n && n.nodeType === 1; n = n.parentNode) if (n.localName === name) return true; return false; };
-      // skipTbl: 문단 안에 표가 끼어 있으면 표 내용은 제외 (본문 줄 텍스트용)
-      const paraText = (p, skipTbl) => {
-        let s = '';
-        for (const t of p.getElementsByTagName('*')) if (t.localName === 't' && (!skipTbl || !hasAncestor(t, 'tbl'))) s += t.textContent;
-        return s.trim();
-      };
-      const all = doc.getElementsByTagName('*');
-      for (const el of all) {
-        if (el.localName === 'tbl' && !hasAncestor(el, 'tbl')) {
-          const grid = [];
-          let rowIdx = 0;
-          for (const tr of el.children) {
-            if (tr.localName !== 'tr') continue;
-            for (const tc of tr.children) {
-              if (tc.localName !== 'tc') continue;
-              let r = rowIdx, c = null;
-              for (const x of tc.children) {
-                if (x.localName === 'cellAddr') { r = Number(x.getAttribute('rowAddr')); c = Number(x.getAttribute('colAddr')); }
-              }
-              const texts = [];
-              for (const x of tc.getElementsByTagName('*')) {
-                if (x.localName === 'p') { const t = paraText(x); if (t) texts.push(t); }
-              }
-              const row = (grid[r] = grid[r] || []);
-              if (c === null) c = row.length;
-              row[c] = texts.join('\n');
-            }
-            rowIdx++;
-          }
-          tables.push(grid.map((row) => Array.from(row || [], (v) => (v || '').trim())));
-        } else if (el.localName === 'p' && !hasAncestor(el, 'tbl')) {
-          const t = paraText(el, true);
-          if (t) lines.push(t);
-        }
-      }
-    }
-
-    function applyWeeklyFromHwpx(tables, lines, fileName) {
-      const found = { week: false, periods: 0, events: 0, duties: 0, notes: 0 };
-      const allTexts = [...lines, ...tables.flat(2)];
-      const DAY = '월화수목금토일';
-
-      // 1) 주간 표시: "7/13(월) ~ 7/18(토)" / "7월 13일 ~ 7월 18일" 패턴
-      const weekRe = /\d{1,2}\s*[\/월]\s*\d{1,2}\s*일?\s*[\(（]?[월화수목금토일]?[\)）]?\s*[~∼〜-]\s*\d{1,2}\s*[\/월]?\s*\d{1,2}\s*일?\s*[\(（]?[월화수목금토일]?[\)）]?/;
-      for (const t of [fileName, ...allTexts]) {
-        const m = String(t).match(weekRe);
-        if (m) { weekly.week = m[0].replace(/\s+/g, ' ').trim(); found.week = true; break; }
-      }
-
-      // 2) 시간표: 요일 헤더(월~금 3개 이상)가 있는 표에서 교시 행 추출
-      const dayCellRe = new RegExp('^[' + DAY + ']');
-      let ttTable = null, ttScore = 0, ttInfo = null;
-      tables.forEach((grid) => {
-        grid.forEach((row, hIdx) => {
-          const dayCols = [];
-          row.forEach((cell, c) => { if (dayCellRe.test(cell) && cell.length <= 8) dayCols.push(c); });
-          if (dayCols.length < 3) return;
-          let periods = 0;
-          for (let r = hIdx + 1; r < grid.length; r++) {
-            const head = (grid[r] || []).find((v) => /^[1-9]\s*(교시)?$/.test(v || ''));
-            if (head) periods++;
-          }
-          if (periods > ttScore) { ttScore = periods; ttTable = grid; ttInfo = { hIdx, dayCols: dayCols.slice(0, DAYS) }; }
-        });
-      });
-      if (ttTable && ttScore) {
-        const { hIdx, dayCols } = ttInfo;
-        dayCols.forEach((c, i) => { if (i < DAYS && ttTable[hIdx][c]) weekly.days[i] = ttTable[hIdx][c].replace(/\s+/g, ' ').slice(0, 8); });
-        const tt = Array.from({ length: PERIODS }, () => ['', '', '', '', '']);
-        for (let r = hIdx + 1; r < ttTable.length; r++) {
-          const row = ttTable[r] || [];
-          const pCell = row.find((v) => /^[1-9]\s*(교시)?$/.test(v || ''));
-          if (!pCell) continue;
-          const p = Number(pCell.match(/[1-9]/)[0]) - 1;
-          if (p >= PERIODS) continue;
-          dayCols.forEach((c, i) => { if (i < DAYS) tt[p][i] = (row[c] || '').replace(/\n/g, ' ').trim(); });
-          found.periods = Math.max(found.periods, p + 1);
-        }
-        weekly.timetable = tt;
-      }
-
-      // 3) 일정: 요일(날짜) + 내용 형태의 행 (시간표 표 제외)
-      const evRowRe = new RegExp('^[' + DAY + ']\\s*요?일?\\s*[\\(（]?[0-9\\/\\.월일\\s]*[\\)）]?$');
-      const events = [];
-      tables.forEach((grid) => {
-        if (grid === ttTable) return;
-        grid.forEach((row) => {
-          const di = row.findIndex((v) => v && v.length <= 12 && evRowRe.test(v.replace(/\s+/g, ' ')));
-          if (di < 0) return;
-          const text = row.filter((v, i) => i !== di && v && v.trim()).join(' · ').replace(/\n/g, ' ').trim();
-          if (text) events.push({ day: row[di].replace(/\s+/g, ' '), text });
-        });
-      });
-      lines.forEach((t) => {
-        const m = t.match(new RegExp('^([' + DAY + ']\\s*[\\(（][0-9\\/\\.월일\\s]+[\\)）])\\s*[:：]?\\s*(.+)$'));
-        if (m) events.push({ day: m[1].replace(/\s+/g, ' '), text: m[2].trim() });
-      });
-      if (events.length) { weekly.events = events; found.events = events.length; }
-
-      // 4) 청소 당번: 구역 키워드가 있는 행
-      const dutyRe = /쓸기|걸레|분리수거|칠판|청소|주번|일지|정리/;
-      const duties = [];
-      tables.forEach((grid) => {
-        if (grid === ttTable) return;
-        grid.forEach((row) => {
-          const cells = row.filter((v) => v && v.trim());
-          if (cells.length < 2) return;
-          if (dutyRe.test(cells[0]) && cells[0].length <= 20) {
-            duties.push({ area: cells[0].replace(/\n/g, ' '), who: cells.slice(1).join(', ').replace(/\n/g, ' ') });
-          }
-        });
-      });
-      if (duties.length) { weekly.duties = duties; found.duties = duties.length; }
-
-      // 5) 유의사항: 글머리표 문단
-      const notes = lines
-        .filter((t) => /^[※•◦·\-–*○□]/.test(t) || /유의|안전|당부|준비물/.test(t))
-        .map((t) => t.replace(/^[※•◦·\-–*○□\s]+/, '').trim())
-        .filter((t) => t && !weekRe.test(t) && !/^\d+\.\s/.test(t) && t.length <= 80)
-        .slice(0, 10);
-      if (notes.length) { weekly.notes = notes; found.notes = notes.length; }
-
-      return found;
-    }
 
     // ── 공지 편집 UI ──
     function renderNotices() {
