@@ -85,7 +85,9 @@
       <!-- 자리 배치 -->
       <section class="card span-2" id="seatCard">
         <h2 class="card-title">🪑 자리 배치</h2>
-        <div class="row seat-controls" style="margin-bottom:12px">
+        <div class="row seat-controls" style="margin-bottom:12px;flex-wrap:wrap;max-width:none">
+          <label class="inline-label" for="seatMonth">월 선택</label>
+          <input type="month" id="seatMonth" style="width:auto" />
           <label class="inline-label" for="seatCols">한 줄 자리 수</label>
           <select id="seatCols">
             <option value="3">3자리</option>
@@ -93,9 +95,11 @@
             <option value="5">5자리</option>
             <option value="6" selected>6자리</option>
           </select>
-          <button class="btn" id="seatBtn">자리 섞기 🔀</button>
+          <button class="btn" id="seatBtn">이 달 자리 섞기 🔀</button>
+          <button class="btn btn-danger" id="seatDel">이 달 삭제</button>
         </div>
-        <p class="note" style="margin:0 0 10px">맨 윗줄이 교탁(칠판) 쪽이에요.</p>
+        <p class="note" style="margin:0 0 10px">맨 윗줄이 교탁(칠판) 쪽이에요. 달마다 배치가 따로 저장돼요.</p>
+        <p class="note" id="seatSavedInfo" style="margin:0 0 10px"></p>
         <div id="seatResult"></div>
       </section>
     </div>
@@ -192,24 +196,52 @@
     if (savedGroups) renderGroups(savedGroups);
 
     // ── 자리 배치 ──
-    function renderSeats(data) {
+    // ── 자리 배치: 월별 저장 ──
+    const ymNow = () => { const t = new Date(); return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0'); };
+    const fmtYm = (ym) => { const [y, m] = ym.split('-'); return `${y}년 ${Number(m)}월`; };
+    let seatsAll = load('manage-seats-monthly', null);
+    if (!seatsAll) {
+      seatsAll = {};
+      const legacy = load(KEY.seats, null); // 예전 단일 저장분은 이번 달로 이관
+      if (legacy) seatsAll[ymNow()] = legacy;
+    }
+    $('seatMonth').value = ymNow();
+    function renderSeats() {
+      const ym = $('seatMonth').value || ymNow();
+      const months = Object.keys(seatsAll).sort();
+      $('seatSavedInfo').textContent = months.length ? '저장된 달: ' + months.map(fmtYm).join(' · ') : '';
+      const data = seatsAll[ym];
+      if (!data) {
+        $('seatResult').innerHTML = `<p class="empty-hint">${fmtYm(ym)} 자리 배치가 아직 없어요. [이 달 자리 섞기]를 눌러 만들어 주세요.</p>`;
+        return;
+      }
       const { cols, seats } = data;
-      let html = '<div class="board-label">🖥️ 교탁</div><div class="seat-grid" style="grid-template-columns:repeat(' + cols + ',1fr)">';
+      let html = '<div class="board-label">🖥️ 교탁 — ' + fmtYm(ym) + '</div><div class="seat-grid" style="grid-template-columns:repeat(' + cols + ',1fr)">';
       html += seats.map((n) => n ? `<div class="seat">${esc(n)}</div>` : '<div class="seat seat-empty"></div>').join('');
       html += '</div>';
       $('seatResult').innerHTML = html;
     }
     $('seatBtn').addEventListener('click', () => {
       if (!roster.length) { alert('먼저 학생 명단을 저장해 주세요.'); return; }
+      const ym = $('seatMonth').value || ymNow();
+      if (seatsAll[ym] && !confirm(`${fmtYm(ym)} 자리 배치를 새로 섞을까요? (기존 배치는 사라져요)`)) return;
       const cols = Number($('seatCols').value);
       const seats = shuffle(roster);
       while (seats.length % cols !== 0) seats.push('');
-      const data = { cols, seats };
-      save(KEY.seats, data);
-      renderSeats(data);
+      seatsAll[ym] = { cols, seats };
+      save('manage-seats-monthly', seatsAll);
+      renderSeats();
     });
-    const savedSeats = load(KEY.seats, null);
-    if (savedSeats) renderSeats(savedSeats);
+    $('seatDel').addEventListener('click', () => {
+      const ym = $('seatMonth').value || ymNow();
+      if (!seatsAll[ym]) return;
+      if (!confirm(`${fmtYm(ym)} 자리 배치를 삭제할까요?`)) return;
+      delete seatsAll[ym];
+      save('manage-seats-monthly', seatsAll);
+      renderSeats();
+    });
+    $('seatMonth').addEventListener('change', renderSeats);
+    renderSeats();
 
     // ── 청소 당번 ──
     $('areas').value = load(KEY.areas, []).join(', ');
