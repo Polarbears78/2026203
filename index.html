@@ -147,6 +147,21 @@
     </footer>
   </main>
 
+  <!-- 상담 빠른 입력 채팅 -->
+  <button class="chat-fab" id="chatFab" aria-label="상담 빠른 입력 열기">🗨️</button>
+  <div class="chat-panel" id="chatPanel" hidden>
+    <div class="chat-head">
+      <span>🗨️ 상담 빠른 입력</span>
+      <button class="chat-close" id="chatClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="chat-msgs" id="chatMsgs"></div>
+    <div class="chat-inputrow">
+      <textarea id="chatInput" rows="1" placeholder="예: 김하늘 오늘 친구와 다툼 상담…"></textarea>
+      <button class="chat-send" id="chatSend" aria-label="보내기">↑</button>
+    </div>
+  </div>
+  <script src="chat.js"></script>
+
   <script>
     // 오늘의 급식 표시
     (function () {
