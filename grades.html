@@ -45,9 +45,9 @@
         <button class="btn btn-danger" id="delExam">삭제 🗑️</button>
       </div>
       <div class="row" style="margin-top:12px;flex-wrap:wrap">
-        <input type="file" id="xlsxGrades" accept=".xlsx,.xlsm,.csv" hidden />
-        <button class="btn btn-ghost" id="importGrades">📥 엑셀 성적 불러오기</button>
-        <span class="note" id="importStatus" style="margin:0">시트 이름(1회고사·2회고사·수행평가·학기말)이 시험 이름이 돼요 · 헤더에 ‘이름’과 과목명이 있는 표 자동 인식</span>
+        <input type="file" id="xlsxGrades" accept=".xlsx,.xlsm,.csv" multiple hidden />
+        <button class="btn btn-ghost" id="importGrades">📥 엑셀·CSV 성적 불러오기</button>
+        <span class="note" id="importStatus" style="margin:0">학생별 성적 CSV(나이스 출력)는 여러 파일을 한꺼번에 선택 — 1·2회고사·수행평가·학기말로 자동 분류돼요</span>
       </div>
       <p class="note" id="rosterHint" style="margin:10px 0 0"></p>
     </section>
@@ -194,8 +194,9 @@
       $('subjectStats').innerHTML = !hasData ? '' : subjectsOf(exam).map((s) => {
         const vals = subjectValues(exam, s);
         if (!vals.length) return '';
-        const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-        return `<div class="bar-row"><span class="bar-label">${s}</span><span class="bar-track"><span class="bar-fill" style="width:${Math.round(avg)}%"></span></span><span class="bar-val">${r1(avg)}점</span><span class="bar-mm">최고 ${Math.max(...vals)} · 최저 ${Math.min(...vals)}</span></div>`;
+        // CSV에서 가져온 실제 반 평균이 있으면 우선 사용
+        const avg = (exam.avg && isFinite(exam.avg[s])) ? exam.avg[s] : vals.reduce((a, b) => a + b, 0) / vals.length;
+        return `<div class="bar-row"><span class="bar-label">${esc(s)}</span><span class="bar-track"><span class="bar-fill" style="width:${Math.round(avg)}%"></span></span><span class="bar-val">${r1(avg)}점</span><span class="bar-mm">최고 ${Math.max(...vals)} · 최저 ${Math.min(...vals)}</span></div>`;
       }).join('');
 
       // 학생별 총점·석차
@@ -230,7 +231,7 @@
         if (typeof row[s] !== 'number') return;
         any = true;
         const vals = subjectValues(exam, s);
-        const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+        const avg = (exam.avg && isFinite(exam.avg[s])) ? exam.avg[s] : vals.reduce((a, b) => a + b, 0) / vals.length;
         const diff = row[s] - avg;
         html += `<div class="bar-pair"><div class="bar-row"><span class="bar-label">${s}</span><span class="bar-track"><span class="bar-fill" style="width:${row[s]}%"></span></span><span class="bar-val">${row[s]}점</span><span class="bar-mm ${diff >= 0 ? 'diff-up' : 'diff-down'}">${diff >= 0 ? '▲' : '▼'} ${r1(Math.abs(diff))}</span></div><div class="bar-row bar-sub"><span class="bar-label">반평균</span><span class="bar-track"><span class="bar-fill alt" style="width:${Math.round(avg)}%"></span></span><span class="bar-val">${r1(avg)}점</span><span class="bar-mm"></span></div></div>`;
       });
@@ -261,27 +262,144 @@
       $('xlsxGrades').click();
     });
     $('xlsxGrades').addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+      const files = [...e.target.files];
+      if (!files.length) return;
+      let csvStudents = 0; const csvExams = new Set(); let wbMsg = '';
       try {
-        const wb = XLSX.read(await file.arrayBuffer());
-        if (wb.SheetNames.filter((n) => /^\d+\.\s/.test(n)).length >= 3) {
-          alert('이 파일은 상담카드 형식이에요.\n[학생·상담] 페이지의 엑셀 불러오기를 사용해 주세요.');
-        } else {
-          const res = importGradeWorkbook(wb, file.name.replace(/\.[^.]+$/, ''));
-          if (!res.exams) {
-            alert('성적 표를 찾지 못했어요.\n첫 몇 줄 안에 “이름”(또는 성명) 헤더가 있고, 그 옆에 과목명 열이 있는 표인지 확인해 주세요.');
+        for (const file of files) {
+          if (/\.csv$/i.test(file.name)) {
+            const r = importStudentCsv(decodeText(await file.arrayBuffer()));
+            csvStudents += r.students;
+            r.exams.forEach((x) => csvExams.add(x));
           } else {
-            save(KEY, db);
-            $('importStatus').textContent = `✓ 시험 ${res.exams}개 · 학생 ${res.students}명 성적을 불러왔어요` + (res.replaced ? ` (같은 이름 시험 ${res.replaced}개는 교체)` : '');
-            renderAll();
+            const wb = XLSX.read(await file.arrayBuffer());
+            if (wb.SheetNames.filter((n) => /^\d+\.\s/.test(n)).length >= 3) {
+              alert('이 파일은 상담카드 형식이에요.\n[학생·상담] 페이지의 엑셀 불러오기를 사용해 주세요.');
+              continue;
+            }
+            const res = importGradeWorkbook(wb, file.name.replace(/\.[^.]+$/, ''));
+            if (res.exams) wbMsg = `시험 ${res.exams}개 · 학생 ${res.students}명(엑셀)`;
           }
         }
+        if (csvStudents || wbMsg) {
+          if (db.exams.length > 1) db.exams = db.exams.filter((x) => Object.keys(x.scores).length || x.id === curId);
+          sortExams();
+          save(KEY, db);
+          const parts = [];
+          if (csvStudents) parts.push(`학생 ${csvStudents}명(CSV) → ${[...csvExams].join('·')}`);
+          if (wbMsg) parts.push(wbMsg);
+          $('importStatus').textContent = '✓ ' + parts.join(' · ') + ' 반영했어요';
+          renderAll();
+        } else {
+          alert('성적 표를 찾지 못했어요.\n· 학생별 CSV: 첫 줄에 “N반 N번 이름”, 이어서 과목/구분/점수 표\n· 엑셀: “이름” 헤더가 있는 표');
+        }
       } catch (err) {
-        alert('엑셀 파일을 읽지 못했어요: ' + err.message);
+        alert('파일을 읽지 못했어요: ' + err.message);
       }
       e.target.value = '';
     });
+
+    // ── 학생별 성적 CSV (나이스 출력 형식) ──
+    // 헤더 줄("… 3반 1번 강유주") 뒤에 과목/구분/고사·영역명/점수/만점·반영비율/원점수·과목평균 표.
+    // 1·2회고사는 그대로, 수행평가는 반영비율 가중평균, 원점수/과목평균은 학기말 점수·반평균으로 저장.
+    function decodeText(buf) {
+      const u8 = new Uint8Array(buf);
+      let t = new TextDecoder('utf-8').decode(u8);
+      if (t.includes('�')) { try { t = new TextDecoder('euc-kr').decode(u8); } catch {} }
+      return t;
+    }
+    function splitLine(line, d) {
+      const out = []; let cur = '', q = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (q) { if (ch === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+        else if (ch === '"') q = true;
+        else if (ch === d) { out.push(cur); cur = ''; }
+        else cur += ch;
+      }
+      out.push(cur);
+      return out;
+    }
+    function importStudentCsv(text) {
+      const delim = text.includes('\t') ? '\t' : ',';
+      const rows = text.split(/\r?\n/).map((l) => splitLine(l, delim));
+      const res = { students: 0, exams: new Set() };
+      let student = null, cols = null, curSubject = '', agg = null;
+
+      const flush = () => {
+        if (!student || !agg) return;
+        const perf = {};
+        Object.entries(agg.perf).forEach(([sub, list]) => {
+          const tw = list.reduce((a, b) => a + b.w, 0);
+          if (tw > 0) perf[sub] = Math.round(list.reduce((a, b) => a + b.v * b.w, 0) / tw * 10) / 10;
+        });
+        const setExam = (name, data, avg) => {
+          if (!Object.keys(data).length) return;
+          let ex = db.exams.find((x) => x.name === name);
+          if (!ex) { ex = { id: Math.max(0, ...db.exams.map((x) => x.id)) + 1, name, subjects: [], scores: {} }; db.exams.push(ex); }
+          if (!ex.subjects) ex.subjects = [];
+          ex.scores[student.name] = data;
+          agg.order.forEach((sub) => { if (data[sub] !== undefined && !ex.subjects.includes(sub)) ex.subjects.push(sub); });
+          if (avg && Object.keys(avg).length) ex.avg = Object.assign(ex.avg || {}, avg);
+          curId = ex.id;
+          res.exams.add(name);
+        };
+        setExam('1회고사', agg.r1);
+        setExam('2회고사', agg.r2);
+        setExam('수행평가', perf);
+        setExam('학기말', agg.fin, agg.avg);
+        if (!roster.includes(student.name)) { roster.push(student.name); save('manage-roster', roster); }
+        res.students++;
+        student = null; agg = null; cols = null; curSubject = '';
+      };
+
+      for (const row of rows) {
+        const joined = row.join(' ').replace(/\s+/g, ' ').trim();
+        const sm = joined.match(/(\d+)\s*번\s+([가-힣a-zA-Z]{2,10})/);
+        if (sm && /학년도|학기/.test(joined)) {
+          flush();
+          student = { no: Number(sm[1]), name: sm[2] };
+          agg = { r1: {}, r2: {}, perf: {}, fin: {}, avg: {}, order: [] };
+          continue;
+        }
+        if (!student) continue;
+        if (!cols) {
+          const ci = row.findIndex((v) => String(v).trim() === '과목');
+          if (ci >= 0) {
+            cols = { sub: ci, area: -1, score: -1, ratio: -1, orig: -1 };
+            row.forEach((v, i) => {
+              const h = String(v).trim();
+              if (/고사|영역명/.test(h)) cols.area = i;
+              else if (h === '점수') cols.score = i;
+              else if (/만점|비율/.test(h)) cols.ratio = i;
+              else if (/원점수/.test(h)) cols.orig = i;
+            });
+          }
+          continue;
+        }
+        const sub = String(row[cols.sub] ?? '').trim();
+        if (sub) { curSubject = sub; if (!agg.order.includes(sub)) agg.order.push(sub); }
+        if (!curSubject) continue;
+        const area = String(row[cols.area] ?? '').trim();
+        const rawScore = String(row[cols.score] ?? '').trim();
+        if (area && rawScore !== '') {
+          let v = Number(rawScore.replace(/[^\d.]/g, ''));
+          if (isFinite(v)) {
+            let w = 0, max = 100;
+            const rm = String(row[cols.ratio] ?? '').match(/([\d.]+)\s*\/\s*([\d.]+)\s*%/);
+            if (rm) { max = Number(rm[1]) || 100; w = Number(rm[2]) || 0; }
+            v = Math.round((max > 0 ? v / max * 100 : v) * 10) / 10;
+            if (/1\s*회\s*고사/.test(area)) agg.r1[curSubject] = v;
+            else if (/2\s*회\s*고사/.test(area)) agg.r2[curSubject] = v;
+            else agg.perf[curSubject] = (agg.perf[curSubject] || []).concat({ v, w: w || 1 });
+          }
+        }
+        const om = String(row[cols.orig] ?? '').match(/([\d.]+)\s*\/\s*([\d.]+)/);
+        if (om) { agg.fin[curSubject] = Number(om[1]); agg.avg[curSubject] = Number(om[2]); }
+      }
+      flush();
+      return res;
+    }
 
     function importGradeWorkbook(wb, fallbackName) {
       const NAME_HEADS = ['이름', '성명'];
