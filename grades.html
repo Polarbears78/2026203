@@ -34,14 +34,20 @@
       <h2 class="card-title">🗃️ 시험 선택</h2>
       <div class="row exam-controls">
         <select id="examSel" style="min-width:180px"></select>
-        <input type="text" id="newExamName" maxlength="30" placeholder="새 시험 이름 (예: 1학기 기말)" style="flex:1;padding:12px 14px;border:1.5px solid var(--border);border-radius:14px;font:inherit;background:#fffafd" />
+        <input type="text" id="newExamName" list="examNames" maxlength="30" placeholder="새 시험 이름 (1회고사·2회고사·수행평가·학기말)" style="flex:1;padding:12px 14px;border:1.5px solid var(--border);border-radius:14px;font:inherit;background:#fffafd" />
+        <datalist id="examNames">
+          <option value="1회고사"></option>
+          <option value="2회고사"></option>
+          <option value="수행평가"></option>
+          <option value="학기말"></option>
+        </datalist>
         <button class="btn" id="addExam">시험 추가 ➕</button>
         <button class="btn btn-danger" id="delExam">삭제 🗑️</button>
       </div>
       <div class="row" style="margin-top:12px;flex-wrap:wrap">
         <input type="file" id="xlsxGrades" accept=".xlsx,.xlsm,.csv" hidden />
         <button class="btn btn-ghost" id="importGrades">📥 엑셀 성적 불러오기</button>
-        <span class="note" id="importStatus" style="margin:0">헤더에 ‘이름’(또는 성명)과 과목명이 있는 표를 자동 인식 · 시트마다 시험 1개</span>
+        <span class="note" id="importStatus" style="margin:0">시트 이름(1회고사·2회고사·수행평가·학기말)이 시험 이름이 돼요 · 헤더에 ‘이름’과 과목명이 있는 표 자동 인식</span>
       </div>
       <p class="note" id="rosterHint" style="margin:10px 0 0"></p>
     </section>
@@ -102,8 +108,14 @@
 
     let roster = load('manage-roster', []);
     let db = load(KEY, { exams: [] });
-    if (!db.exams.length) db.exams.push({ id: 1, name: '1학기 중간고사', scores: {} });
+    if (!db.exams.length) db.exams.push({ id: 1, name: '1회고사', scores: {} });
     let curId = db.exams[db.exams.length - 1].id;
+
+    // 학교 시험 체계 순서: 1회고사 → 2회고사 → 수행평가 → 학기말 (그 외는 뒤에 등록순)
+    const EXAM_PATTERNS = [/1\s*회\s*고사/, /2\s*회\s*고사/, /수행\s*평가/, /학기\s*말/];
+    const examOrder = (name) => { const i = EXAM_PATTERNS.findIndex((re) => re.test(String(name))); return i < 0 ? 99 : i; };
+    const sortExams = () => { db.exams.sort((a, b) => examOrder(a.name) - examOrder(b.name) || a.id - b.id); };
+    sortExams();
 
     const cur = () => db.exams.find((e) => e.id === curId) || db.exams[0];
 
@@ -123,6 +135,7 @@
       db.exams.push({ id, name, scores: {} });
       curId = id;
       $('newExamName').value = '';
+      sortExams();
       save(KEY, db);
       renderAll();
     });
@@ -327,6 +340,7 @@
       if (res.exams) {
         // 점수가 하나도 없는 (초기 생성된) 빈 시험 정리
         if (db.exams.length > 1) db.exams = db.exams.filter((x) => Object.keys(x.scores).length || x.id === curId);
+        sortExams();
         // 명단이 비어 있으면 가져온 학생을 번호순으로 명단에 등록
         if (!roster.length && importedOrder.length) {
           roster = [...new Set(importedOrder.sort((a, b) => a.no - b.no).map((o) => o.name))];
