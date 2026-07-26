@@ -276,6 +276,16 @@ textarea { resize: vertical; margin: 10px 0; }
 .ko-list { margin: 0; padding-left: 22px; }
 .ko-list li { margin-bottom: 7px; font-size: .92rem; }
 
+/* ===== 공지사항 ===== */
+.notice-card { background: linear-gradient(135deg, #fff8e8, #ffefd0); border: 1.5px solid #ffe0a3; }
+.notice-card .card-title { color: #a16207; }
+.notice-item { padding: 10px 0; border-bottom: 1.5px dashed #ffe0a3; }
+.notice-item:last-child { border-bottom: 0; padding-bottom: 0; }
+.notice-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.notice-top b { font-size: .95rem; color: #854d0e; }
+.notice-top small { color: #b5892f; font-size: .78rem; white-space: nowrap; }
+.notice-item p { margin: 4px 0 0; font-size: .9rem; color: #6b5220; white-space: pre-wrap; }
+
 /* ===== 오늘의 급식 ===== */
 .meal-card {
   background: linear-gradient(135deg, #eafaf1, #d6f5e3);

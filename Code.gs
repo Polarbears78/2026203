@@ -3,7 +3,10 @@
  * - 학교생활 소감 설문        → '응답' 탭
  * - 방학 학습 기록(type=study) → '학습기록' 탭
  * - 통계 페이지 읽기(GET action=studyStats) → '학습기록' 데이터를 JSONP로 반환
+ * - 콘텐츠 게시(type=publish, 관리자 키 필요) → '콘텐츠' 탭  ※ 관리 콘솔 전용
+ * - 콘텐츠 읽기(GET action=content) → 주간안내·공지사항 JSONP 반환
  * 설정 방법은 SHEET_SETUP.md 참고.
+ * ※ 콘텐츠 게시를 쓰려면 [프로젝트 설정 → 스크립트 속성]에 ADMIN_KEY를 등록하세요.
  */
 function doPost(e) {
   var lock = LockService.getScriptLock();
@@ -30,6 +33,35 @@ function doPost(e) {
         new Date(), d.date || '', d.num || '', d.name || '',
         d.kor || '', d.math || '', d.eng || '', d.word || '', d.sci || '', d.reading || ''
       ]);
+    } else if (d.type === 'publish') {
+      // 관리 콘솔 → 주간안내·공지사항 게시 (ADMIN_KEY 검증)
+      var adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+      if (!adminKey) {
+        return ContentService
+          .createTextOutput(JSON.stringify({ result: 'error', message: 'ADMIN_KEY가 설정되지 않았습니다. 스크립트 속성에 등록하세요.' }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      if (String(d.key || '') !== adminKey) {
+        return ContentService
+          .createTextOutput(JSON.stringify({ result: 'error', message: '관리자 키가 올바르지 않습니다.' }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      var kind = String(d.kind || '');
+      if (kind !== 'weekly' && kind !== 'notice') {
+        return ContentService
+          .createTextOutput(JSON.stringify({ result: 'error', message: '알 수 없는 kind: ' + kind }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      var ct = ss.getSheetByName('콘텐츠') || ss.insertSheet('콘텐츠');
+      if (ct.getLastRow() === 0) ct.appendRow(['kind', 'json', 'updated']);
+      var json = JSON.stringify(d.data || {});
+      var rowIdx = -1;
+      if (ct.getLastRow() > 1) {
+        var kinds = ct.getRange(2, 1, ct.getLastRow() - 1, 1).getValues();
+        for (var k = 0; k < kinds.length; k++) if (String(kinds[k][0]) === kind) { rowIdx = k + 2; break; }
+      }
+      if (rowIdx > 0) ct.getRange(rowIdx, 1, 1, 3).setValues([[kind, json, new Date()]]);
+      else ct.appendRow([kind, json, new Date()]);
     } else {
       var sheet = ss.getSheetByName('응답') || ss.insertSheet('응답');
       var headers = ['제출시각', '학번', '이름', '1인1역/직책', '학교행사',
@@ -120,6 +152,37 @@ function doGet(e) {
         .setMimeType(ContentService.MimeType.JAVASCRIPT);
     }
     return ContentService.createTextOutput(bpayload).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  if (p.action === 'content') {
+    // 주간안내·공지사항 읽기 (학생용 페이지·관리 콘솔 공용, 인증 불필요)
+    var cpayload;
+    try {
+      var csh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('콘텐츠');
+      var content = {};
+      if (csh && csh.getLastRow() > 1) {
+        var cvals = csh.getRange(2, 1, csh.getLastRow() - 1, 3).getValues();
+        for (var c = 0; c < cvals.length; c++) {
+          var ckind = String(cvals[c][0] || '');
+          if (!ckind) continue;
+          var cdata;
+          try { cdata = JSON.parse(String(cvals[c][1] || '{}')); } catch (pe) { cdata = null; }
+          var cup = cvals[c][2];
+          content[ckind] = {
+            data: cdata,
+            updated: (cup instanceof Date) ? Utilities.formatDate(cup, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss') : String(cup || '')
+          };
+        }
+      }
+      cpayload = JSON.stringify({ ok: true, content: content });
+    } catch (err) {
+      cpayload = JSON.stringify({ ok: false, message: String(err) });
+    }
+    if (cb) {
+      return ContentService.createTextOutput(cb + '(' + cpayload + ')')
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+    return ContentService.createTextOutput(cpayload).setMimeType(ContentService.MimeType.JSON);
   }
 
   return ContentService.createTextOutput('2학년 3반 폼 수집 엔드포인트가 동작 중입니다.');

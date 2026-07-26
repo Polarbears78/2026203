@@ -46,7 +46,8 @@
   </main>
 
   <script>
-    const W = {
+    // 기본(예비) 내용 — 관리 콘솔에서 게시한 내용이 있으면 그걸 우선 표시
+    const DEFAULT_W = {
       week: '7/13(월) ~ 7/18(토)',
       days: ['월(13)', '화(14)', '수(15)', '목(16)', '금(17)'],
       events: [
@@ -58,13 +59,13 @@
         { day: '토 (7/18)', text: '심화과학반 캠프' },
       ],
       timetable: [
-        ['1', '회화 유태', '역사 이언', '영어 유태', '한문 정은', ''],
-        ['2', '스포츠 이용', '한문 정은', '미술 전지', '자율 김재', ''],
-        ['3', '기가 김규', '체육 함승', '미술 전지', '', ''],
-        ['4', '기가 김규', '수학 김영', '기가 김규', '', ''],
-        ['5', '한문 정은', '국어 이현', '과학 김재', '', ''],
-        ['6', '역사 이언', '도덕 조은', '동아리 김재', '', ''],
-        ['7', '국어 이현', '과학 김재', '', '', ''],
+        ['회화 유태', '역사 이언', '영어 유태', '한문 정은', ''],
+        ['스포츠 이용', '한문 정은', '미술 전지', '자율 김재', ''],
+        ['기가 김규', '체육 함승', '미술 전지', '', ''],
+        ['기가 김규', '수학 김영', '기가 김규', '', ''],
+        ['한문 정은', '국어 이현', '과학 김재', '', ''],
+        ['역사 이언', '도덕 조은', '동아리 김재', '', ''],
+        ['국어 이현', '과학 김재', '', '', ''],
       ],
       duties: [
         { area: '바닥 쓸기', who: '23 정지우, 24 조연우' },
@@ -75,57 +76,84 @@
       ],
       notes: ['목(7/16) 방학식 · 금(7/17) 제헌절(공휴일)', '7월 급식 순서: 1-2-3', '주변을 잘 살피고, 활동하기'],
     };
+    const ENDPOINT = 'https://script.google.com/macros/s/AKfycby9POET85dvQoraZRfvx4XvAdWX-ZN3xWkVIQPCyQeDp3TwRyvURm1aqhEYfcqv48IG/exec';
 
-    document.getElementById('weekSub').textContent = '2학년 3반 · ' + W.week;
+    function render(W) {
+      document.getElementById('weekSub').textContent = '2학년 3반' + (W.week ? ' · ' + W.week : '');
 
-    // 주요 일정
-    const ev = document.getElementById('eventList');
-    W.events.forEach((e) => {
-      const li = document.createElement('li');
-      if (!e.text) li.classList.add('empty');
-      const d = document.createElement('span');
-      d.className = 'ev-day';
-      d.textContent = e.day;
-      const t = document.createElement('span');
-      t.className = 'ev-text';
-      t.textContent = e.text || '일정 없음';
-      li.append(d, t);
-      ev.appendChild(li);
-    });
+      const ev = document.getElementById('eventList');
+      ev.innerHTML = '';
+      (W.events || []).filter((e) => e.day || e.text).forEach((e) => {
+        const li = document.createElement('li');
+        if (!e.text) li.classList.add('empty');
+        const d = document.createElement('span');
+        d.className = 'ev-day';
+        d.textContent = e.day;
+        const t = document.createElement('span');
+        t.className = 'ev-text';
+        t.textContent = e.text || '일정 없음';
+        li.append(d, t);
+        ev.appendChild(li);
+      });
 
-    // 시간표
-    const tt = document.getElementById('timetable');
-    const head = document.createElement('tr');
-    head.innerHTML = '<th>교시</th>' + W.days.map((d) => '<th>' + d + '</th>').join('');
-    tt.appendChild(head);
-    W.timetable.forEach((row) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = '<th>' + row[0] + '</th>' +
-        row.slice(1).map((c) => '<td>' + (c || '') + '</td>').join('');
-      tt.appendChild(tr);
-    });
+      const tt = document.getElementById('timetable');
+      tt.innerHTML = '';
+      const head = document.createElement('tr');
+      head.innerHTML = '<th>교시</th>' + (W.days || []).map((d) => '<th></th>').join('');
+      head.querySelectorAll('th').forEach((th, i) => { if (i > 0) th.textContent = W.days[i - 1]; });
+      tt.appendChild(head);
+      (W.timetable || []).forEach((row, p) => {
+        if (!row.some((c) => c)) return; // 전부 빈 교시는 생략
+        const tr = document.createElement('tr');
+        const th = document.createElement('th');
+        th.textContent = String(p + 1);
+        tr.appendChild(th);
+        row.forEach((c) => {
+          const td = document.createElement('td');
+          td.textContent = c || '';
+          tr.appendChild(td);
+        });
+        tt.appendChild(tr);
+      });
 
-    // 청소 당번
-    const dl = document.getElementById('dutyList');
-    W.duties.forEach((d) => {
-      const li = document.createElement('li');
-      const a = document.createElement('span');
-      a.className = 'duty-area';
-      a.textContent = d.area;
-      const w = document.createElement('span');
-      w.className = 'duty-who';
-      w.textContent = d.who;
-      li.append(a, w);
-      dl.appendChild(li);
-    });
+      const dl = document.getElementById('dutyList');
+      dl.innerHTML = '';
+      (W.duties || []).filter((d) => d.area || d.who).forEach((d) => {
+        const li = document.createElement('li');
+        const a = document.createElement('span');
+        a.className = 'duty-area';
+        a.textContent = d.area;
+        const w = document.createElement('span');
+        w.className = 'duty-who';
+        w.textContent = d.who;
+        li.append(a, w);
+        dl.appendChild(li);
+      });
 
-    // 안내
-    const nl = document.getElementById('noteList');
-    W.notes.forEach((n) => {
-      const li = document.createElement('li');
-      li.textContent = n;
-      nl.appendChild(li);
-    });
+      const nl = document.getElementById('noteList');
+      nl.innerHTML = '';
+      (W.notes || []).forEach((n) => {
+        const li = document.createElement('li');
+        li.textContent = n;
+        nl.appendChild(li);
+      });
+    }
+
+    // 게시된 주간안내 불러오기 (실패 시 기본 내용)
+    render(DEFAULT_W);
+    let done = false;
+    window.onWeeklyContent = (res) => {
+      done = true;
+      const d = res && res.ok && res.content && res.content.weekly && res.content.weekly.data;
+      if (d && d.days && d.days.length) render(d);
+    };
+    (function () {
+      const s = document.createElement('script');
+      s.src = ENDPOINT + '?action=content&callback=onWeeklyContent&_=' + String(performance.now()).replace('.', '');
+      s.onerror = () => {};
+      document.body.appendChild(s);
+      setTimeout(() => { if (!done) s.remove(); }, 8000);
+    })();
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#4f46e5" />
+  <title>2학년 3반 관리 콘솔</title>
+  <meta name="description" content="2학년 3반 담임용 관리 콘솔 — 성적·상담·자리배치·학급 도구" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="stylesheet" href="admin.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%AB%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="admin.html">2학년 3반 <span>관리 콘솔</span></a>
+      <nav class="nav-links">
+        <a href="admin.html" class="active">대시보드</a>
+        <a href="counsel.html">학생·상담</a>
+        <a href="grades.html">성적</a>
+        <a href="manage.html">학급 도구</a>
+        <a href="content.html">콘텐츠</a>
+        <a href="index.html" class="nav-student">학생용 페이지 ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="page-head">
+      <h1>대시보드</h1>
+      <p>육민관중학교 2학년 3반 — 모든 데이터는 이 컴퓨터의 브라우저에만 저장됩니다.</p>
+    </div>
+
+    <!-- 요약 -->
+    <div class="stat-row">
+      <div class="stat"><div class="stat-num" id="stStudents">0</div><div class="stat-label">등록 학생</div></div>
+      <div class="stat"><div class="stat-num" id="stRecords">0</div><div class="stat-label">상담 기록</div></div>
+      <div class="stat"><div class="stat-num" id="stExams">0</div><div class="stat-label">등록된 시험</div></div>
+      <div class="stat"><div class="stat-num" id="stLast">—</div><div class="stat-label">최근 상담일</div></div>
+    </div>
+
+    <!-- 관리 메뉴 -->
+    <div class="tile-grid">
+      <a class="tile" href="counsel.html">
+        <span class="tile-icon">🗂️</span>
+        <span><b>학생·상담 카드</b><small>학생별 개인 카드 · 상담 기록 관리</small></span>
+      </a>
+      <a class="tile" href="grades.html">
+        <span class="tile-icon">📊</span>
+        <span><b>성적 자료</b><small>점수 입력 · 평균 · 석차 · 추이 분석</small></span>
+      </a>
+      <a class="tile" href="manage.html#seatCard">
+        <span class="tile-icon">🪑</span>
+        <span><b>자리 배치</b><small>랜덤 자리 섞기 · 교탁 기준 배치도</small></span>
+      </a>
+      <a class="tile" href="manage.html">
+        <span class="tile-icon">🧰</span>
+        <span><b>학급 도구</b><small>명단 관리 · 발표자 뽑기 · 모둠 · 청소 당번</small></span>
+      </a>
+      <a class="tile" href="content.html">
+        <span class="tile-icon">📢</span>
+        <span><b>콘텐츠 관리</b><small>주간안내 · 공지사항 편집 → 웹 앱에 게시</small></span>
+      </a>
+    </div>
+
+    <!-- 최근 상담 -->
+    <section class="card">
+      <h2 class="card-title">최근 상담 기록</h2>
+      <div id="recentRecs"></div>
+      <p class="empty-hint" id="recentEmpty">아직 상담 기록이 없습니다. 우측 하단 채팅 버튼으로 빠르게 입력할 수 있어요.</p>
+    </section>
+
+    <!-- 학생용 페이지 -->
+    <h2 class="section-h">학생용 페이지</h2>
+    <div class="link-list">
+      <a href="index.html">📋 학생용 홈 <small>급식 · 안내 메뉴 (원래 링크 첫 화면)</small></a>
+      <a href="board.html">💬 우리 반 게시판 <small>학생 자유 게시판</small></a>
+      <a href="weekly.html">🗓️ 주간안내 <small>일정 · 시간표 · 청소 당번</small></a>
+      <a href="study-log.html">📚 방학 학습 기록 <small>학생 학습량 기록</small></a>
+      <a href="study-stats.html">📈 학습 기록 통계 <small>학생별 학습 현황</small></a>
+      <a href="jayubok.html">👕 자유복의 날 <small>D-day 자동 확인</small></a>
+    </div>
+
+    <footer class="foot"><span>육민관중학교 2학년 3반 관리 콘솔 · 데이터는 이 컴퓨터에만 저장됩니다</span></footer>
+  </main>
+
+  <!-- 상담 빠른 입력 채팅 -->
+  <button class="chat-fab" id="chatFab" aria-label="상담 빠른 입력 열기">🗨️</button>
+  <div class="chat-panel" id="chatPanel" hidden>
+    <div class="chat-head">
+      <span>상담 빠른 입력</span>
+      <button class="chat-close" id="chatClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="chat-msgs" id="chatMsgs"></div>
+    <div class="chat-inputrow">
+      <textarea id="chatInput" rows="1" placeholder="예: 김하늘 오늘 친구와 다툼 상담…"></textarea>
+      <button class="chat-send" id="chatSend" aria-label="보내기">↑</button>
+    </div>
+  </div>
+  <script src="chat.js"></script>
+
+  <script>
+    (function () {
+      const load = (k, fb) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fb; } catch { return fb; } };
+      const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      const CAT_EMOJI = { '학업': '📚', '교우관계': '🤝', '진로': '🧭', '가정': '🏠', '생활': '🌱' };
+
+      const roster = load('manage-roster', []);
+      const records = load('counsel-records', []);
+      const grades = load('grades-data', { exams: [] });
+
+      document.getElementById('stStudents').textContent = roster.length;
+      document.getElementById('stRecords').textContent = records.length;
+      document.getElementById('stExams').textContent = grades.exams.length;
+      const dates = records.map((r) => r.date).filter(Boolean).sort();
+      document.getElementById('stLast').textContent = dates.length ? dates[dates.length - 1].slice(5).replace('-', '/') : '—';
+
+      const recent = records.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)) || b.id - a.id).slice(0, 5);
+      if (recent.length) {
+        document.getElementById('recentEmpty').classList.add('hidden');
+        document.getElementById('recentRecs').innerHTML = recent.map((r) => `
+          <div class="rec">
+            <div class="post-top">
+              <span class="rec-name">${esc(r.name)} <span class="tag">${CAT_EMOJI[r.cat] || ''} ${esc(r.cat)}</span></span>
+              <span class="post-time">${esc(r.date)}</span>
+            </div>
+            <div class="post-body">${esc(r.text.length > 90 ? r.text.slice(0, 90) + '…' : r.text)}</div>
+          </div>`).join('');
+      }
+
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+      }
+    })();
+  </script>
+</body>
+</html>
