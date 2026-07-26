@@ -1,7 +1,7 @@
 /* 서비스 워커
  * - HTML 문서와 data.json: 네트워크 우선(항상 최신), 오프라인 시 캐시로 폴백
  * - 그 외 정적 파일(css/js/이미지): 캐시 우선 */
-const CACHE = 'jayubok-v24';
+const CACHE = 'jayubok-v25';
 const ASSETS = [
   './',
   './index.html',
@@ -16,6 +16,7 @@ const ASSETS = [
   './counsel.html',
   './grades.html',
   './chat.js',
+  './vendor/xlsx.full.min.js',
   './style.css',
   './app.js',
   './manifest.webmanifest',

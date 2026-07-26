@@ -170,6 +170,33 @@ textarea { resize: vertical; }
 .sc-meta { font-size: .78rem; color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
 .sc-badge { display: inline-block; font-size: .74rem; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 2px 9px; }
 
+.sc-sub { display: block; font-size: .76rem; color: var(--muted); font-weight: 500; }
+.sc-top > :last-child.badge-ok, .sc-top > :last-child.badge-watch { margin-left: auto; }
+.badge-ok, .badge-watch {
+  font-size: .74rem; font-weight: 700; border-radius: 999px; padding: 3px 10px; white-space: nowrap;
+}
+.badge-ok { color: #047857; background: #d1fae5; }
+.badge-watch { color: #b45309; background: #fef3c7; }
+
+.radar-wrap { display: flex; justify-content: center; }
+.radar-svg { width: 100%; height: auto; display: block; }
+.radar-legend { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: .78rem; color: var(--muted); margin: 8px 0 0; font-weight: 600; }
+.legend-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.legend-me { background: rgba(79, 70, 229, .7); }
+.legend-avg { background: rgba(245, 158, 11, .7); margin-left: 12px; }
+
+.p-row { display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px solid #f1f5f9; font-size: .88rem; }
+.p-row:last-child { border-bottom: 0; }
+.p-k { flex: 0 0 96px; color: var(--muted); font-weight: 600; }
+.p-v { word-break: break-all; }
+
+.section-cols { columns: 2 340px; column-gap: 24px; }
+.section-block { break-inside: avoid; margin-bottom: 16px; }
+.section-block h3 { margin: 0 0 6px; font-size: .86rem; font-weight: 700; color: #334155; }
+.section-block p { margin: 0; font-size: .88rem; white-space: pre-wrap; word-break: break-word; color: #334155; background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 11px 13px; }
+
+.g-avg { display: block; font-size: .7rem; color: var(--muted); font-weight: 500; }
+
 .detail-head { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
 .detail-head h2 { margin: 0; font-size: 1.25rem; letter-spacing: -.02em; }
 .detail-head .sc-meta { flex-direction: row; gap: 10px; }
