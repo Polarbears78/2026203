@@ -47,7 +47,7 @@
       <div class="row" style="margin-top:12px;flex-wrap:wrap">
         <input type="file" id="xlsxGrades" accept=".xlsx,.xlsm,.csv" multiple hidden />
         <button class="btn btn-ghost" id="importGrades">📥 엑셀·CSV 성적 불러오기</button>
-        <span class="note" id="importStatus" style="margin:0">학생별 성적 CSV(나이스 출력)는 여러 파일을 한꺼번에 선택 — 1·2회고사·수행평가·학기말로 자동 분류돼요</span>
+        <span class="note" id="importStatus" style="margin:0">나이스 ‘개인별 일람표’ 엑셀(전체 학생 한 파일) 또는 학생별 CSV — 1·2회고사·수행평가·학기말로 자동 분류돼요</span>
       </div>
       <p class="note" id="rosterHint" style="margin:10px 0 0"></p>
     </section>
@@ -277,6 +277,20 @@
               alert('이 파일은 상담카드 형식이에요.\n[학생·상담] 페이지의 엑셀 불러오기를 사용해 주세요.');
               continue;
             }
+            // 나이스 '개인별 일람표' 엑셀: 학생 블록("… 3반 1번 이름")이 이어진 형식
+            let neis = 0;
+            for (const sn of wb.SheetNames) {
+              const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: '' });
+              const isNeis = rows.slice(0, 60).some((row) => {
+                const j = row.join(' ');
+                return /학년도|학기/.test(j) && /\d+\s*번\s+[가-힣]/.test(j);
+              });
+              if (!isNeis) continue;
+              const r = importStudentRows(rows);
+              neis += r.students;
+              r.exams.forEach((x) => csvExams.add(x));
+            }
+            if (neis) { csvStudents += neis; continue; }
             const res = importGradeWorkbook(wb, file.name.replace(/\.[^.]+$/, ''));
             if (res.exams) wbMsg = `시험 ${res.exams}개 · 학생 ${res.students}명(엑셀)`;
           }
@@ -286,9 +300,10 @@
           sortExams();
           save(KEY, db);
           const parts = [];
-          if (csvStudents) parts.push(`학생 ${csvStudents}명(CSV) → ${[...csvExams].join('·')}`);
+          if (csvStudents) parts.push(`학생 ${csvStudents}명 → ${[...csvExams].join('·')}`);
           if (wbMsg) parts.push(wbMsg);
           $('importStatus').textContent = '✓ ' + parts.join(' · ') + ' 반영했어요';
+          if (roster.length) $('rosterHint').textContent = `학생 명단 ${roster.length}명`;
           renderAll();
         } else {
           alert('성적 표를 찾지 못했어요.\n· 학생별 CSV: 첫 줄에 “N반 N번 이름”, 이어서 과목/구분/점수 표\n· 엑셀: “이름” 헤더가 있는 표');
@@ -322,7 +337,10 @@
     }
     function importStudentCsv(text) {
       const delim = text.includes('\t') ? '\t' : ',';
-      const rows = text.split(/\r?\n/).map((l) => splitLine(l, delim));
+      return importStudentRows(text.split(/\r?\n/).map((l) => splitLine(l, delim)));
+    }
+    // rows: 2차원 배열 — CSV 줄 분할 결과 또는 엑셀 시트(sheet_to_json header:1)
+    function importStudentRows(rows) {
       const res = { students: 0, exams: new Set() };
       let student = null, cols = null, curSubject = '', agg = null;
 
