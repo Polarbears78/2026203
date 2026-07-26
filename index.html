@@ -3,188 +3,130 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#ff9ecd" />
-  <title>2학년 3반 안내</title>
-  <meta name="description" content="2학년 3반 주간안내와 자유복의 날을 확인하는 페이지" />
+  <meta name="theme-color" content="#4f46e5" />
+  <title>2학년 3반 관리 콘솔</title>
+  <meta name="description" content="2학년 3반 담임용 관리 콘솔 — 성적·상담·자리배치·학급 도구" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="2-3 안내" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-  <link rel="stylesheet" href="style.css" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8B%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="admin.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%AB%3C/text%3E%3C/svg%3E" />
 </head>
 <body>
-  <header class="topbar">
-    <h1>📋 2학년 3반 안내</h1>
-    <p class="subtitle">육민관중학교</p>
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="index.html">2학년 3반 <span>관리 콘솔</span></a>
+      <nav class="nav-links">
+        <a href="index.html" class="active">대시보드</a>
+        <a href="counsel.html">학생·상담</a>
+        <a href="grades.html">성적</a>
+        <a href="manage.html">학급 도구</a>
+        <a href="student.html" class="nav-student">학생용 페이지 ↗</a>
+      </nav>
+    </div>
   </header>
 
   <main class="container">
-    <!-- 오늘의 급식 -->
-    <section class="card meal-card" id="mealCard">
-      <div class="meal-head">
-        <h2 class="meal-title">🍚 오늘의 급식</h2>
-        <span class="meal-date" id="mealDate">—</span>
-      </div>
-      <ul class="meal-dishes" id="mealDishes"><li class="meal-loading">불러오는 중…</li></ul>
-      <p class="meal-kcal" id="mealKcal"></p>
-    </section>
+    <div class="page-head">
+      <h1>대시보드</h1>
+      <p>육민관중학교 2학년 3반 — 모든 데이터는 이 컴퓨터의 브라우저에만 저장됩니다.</p>
+    </div>
 
-    <p class="menu-lead">무엇을 확인할까요?</p>
+    <!-- 요약 -->
+    <div class="stat-row">
+      <div class="stat"><div class="stat-num" id="stStudents">0</div><div class="stat-label">등록 학생</div></div>
+      <div class="stat"><div class="stat-num" id="stRecords">0</div><div class="stat-label">상담 기록</div></div>
+      <div class="stat"><div class="stat-num" id="stExams">0</div><div class="stat-label">등록된 시험</div></div>
+      <div class="stat"><div class="stat-num" id="stLast">—</div><div class="stat-label">최근 상담일</div></div>
+    </div>
 
-    <a class="menu-card menu-board" href="board.html">
-      <span class="menu-emoji" aria-hidden="true">💬</span>
-      <span class="menu-text">
-        <b>우리 반 게시판</b>
-        <small>친구들과 자유롭게 글 남기기</small>
-      </span>
-      <span class="menu-arrow" aria-hidden="true">›</span>
-    </a>
-
-    <a class="menu-card menu-weekly" href="weekly.html">
-      <span class="menu-emoji" aria-hidden="true">🗓️</span>
-      <span class="menu-text">
-        <b>주간안내</b>
-        <small>이번 주 일정 · 시간표 · 청소 당번</small>
-      </span>
-      <span class="menu-arrow" aria-hidden="true">›</span>
-    </a>
-
-    <a class="menu-card menu-study" href="study-log.html">
-      <span class="menu-emoji" aria-hidden="true">📚</span>
-      <span class="menu-text">
-        <b>방학 학습 기록</b>
-        <small>매일 국어·수학·영어 학습량 기록</small>
-      </span>
-      <span class="menu-arrow" aria-hidden="true">›</span>
-    </a>
-
-    <!-- 학교생활 소감 설문: 숨김 (필요 시 이 블록의 주석을 해제하세요)
-    <a class="menu-card menu-survey" href="survey.html">
-      <span class="menu-emoji" aria-hidden="true">✍️</span>
-      <span class="menu-text">
-        <b>학교생활 소감 설문</b>
-        <small>1학기 생기부 기초 자료 작성</small>
-      </span>
-      <span class="menu-arrow" aria-hidden="true">›</span>
-    </a>
-    -->
-
-    <a class="menu-card menu-free" href="jayubok.html">
-      <span class="menu-emoji" aria-hidden="true">👕</span>
-      <span class="menu-text">
-        <b>자유복의 날</b>
-        <small>다음 자유복 입는 날 D-day 자동 확인</small>
-      </span>
-      <span class="menu-arrow" aria-hidden="true">›</span>
-    </a>
-
-    <!-- 다른 페이지 바로가기 -->
-    <section class="card link-card">
-      <a class="link-row" href="https://open.kakao.com/o/gIts53ui" target="_blank" rel="noopener">
-        <span class="link-emoji" aria-hidden="true">💬</span>
-        <span class="link-text">
-          <b>카카오톡 오픈채팅</b>
-          <small>2학년 3반 채팅방 입장</small>
-        </span>
-        <span class="link-arrow" aria-hidden="true">↗</span>
+    <!-- 관리 메뉴 -->
+    <div class="tile-grid">
+      <a class="tile" href="counsel.html">
+        <span class="tile-icon">🗂️</span>
+        <span><b>학생·상담 카드</b><small>학생별 개인 카드 · 상담 기록 관리</small></span>
       </a>
+      <a class="tile" href="grades.html">
+        <span class="tile-icon">📊</span>
+        <span><b>성적 자료</b><small>점수 입력 · 평균 · 석차 · 추이 분석</small></span>
+      </a>
+      <a class="tile" href="manage.html#seatCard">
+        <span class="tile-icon">🪑</span>
+        <span><b>자리 배치</b><small>랜덤 자리 섞기 · 교탁 기준 배치도</small></span>
+      </a>
+      <a class="tile" href="manage.html">
+        <span class="tile-icon">🧰</span>
+        <span><b>학급 도구</b><small>명단 관리 · 발표자 뽑기 · 모둠 · 청소 당번</small></span>
+      </a>
+    </div>
+
+    <!-- 최근 상담 -->
+    <section class="card">
+      <h2 class="card-title">최근 상담 기록</h2>
+      <div id="recentRecs"></div>
+      <p class="empty-hint" id="recentEmpty">아직 상담 기록이 없습니다. 우측 하단 채팅 버튼으로 빠르게 입력할 수 있어요.</p>
     </section>
 
-    <!-- 앱 설치 안내 -->
-    <section class="card install-card" id="installCard" hidden>
-      <h2 class="card-title">📲 앱으로 설치하기</h2>
-      <p class="install-desc">홈 화면에 추가하면 주소창 없이 <b>앱처럼</b> 바로 열 수 있어요!</p>
-      <button class="btn btn-block" id="installBtn" hidden>홈 화면에 앱 설치 💗</button>
-      <div class="install-ios" id="installIos" hidden>
-        <p class="ios-step">아이폰은 이렇게 설치해요 👇</p>
-        <ol class="ios-list">
-          <li>사파리(Safari) 아래 <b>공유 <span class="ios-share">⬆︎</span></b> 버튼 누르기</li>
-          <li><b>‘홈 화면에 추가’</b> 선택 → <b>추가</b></li>
-        </ol>
-      </div>
-    </section>
+    <!-- 학생용 페이지 -->
+    <h2 class="section-h">학생용 페이지</h2>
+    <div class="link-list">
+      <a href="student.html">📋 학생용 홈 <small>급식 · 안내 메뉴</small></a>
+      <a href="board.html">💬 우리 반 게시판 <small>학생 자유 게시판</small></a>
+      <a href="weekly.html">🗓️ 주간안내 <small>일정 · 시간표 · 청소 당번</small></a>
+      <a href="study-log.html">📚 방학 학습 기록 <small>학생 학습량 기록</small></a>
+      <a href="study-stats.html">📈 학습 기록 통계 <small>학생별 학습 현황</small></a>
+      <a href="jayubok.html">👕 자유복의 날 <small>D-day 자동 확인</small></a>
+    </div>
 
-    <footer class="foot">
-      <span>육민관중학교 2학년 3반 💗</span>
-    </footer>
+    <footer class="foot"><span>육민관중학교 2학년 3반 관리 콘솔 · 데이터는 이 컴퓨터에만 저장됩니다</span></footer>
   </main>
 
+  <!-- 상담 빠른 입력 채팅 -->
+  <button class="chat-fab" id="chatFab" aria-label="상담 빠른 입력 열기">🗨️</button>
+  <div class="chat-panel" id="chatPanel" hidden>
+    <div class="chat-head">
+      <span>상담 빠른 입력</span>
+      <button class="chat-close" id="chatClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="chat-msgs" id="chatMsgs"></div>
+    <div class="chat-inputrow">
+      <textarea id="chatInput" rows="1" placeholder="예: 김하늘 오늘 친구와 다툼 상담…"></textarea>
+      <button class="chat-send" id="chatSend" aria-label="보내기">↑</button>
+    </div>
+  </div>
+  <script src="chat.js"></script>
+
   <script>
-    // 오늘의 급식 표시
     (function () {
-      const pad = (n) => String(n).padStart(2, '0');
-      const t = new Date();
-      const todayISO = `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
-      const dishesEl = document.getElementById('mealDishes');
-      const dateEl = document.getElementById('mealDate');
-      const kcalEl = document.getElementById('mealKcal');
+      const load = (k, fb) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fb; } catch { return fb; } };
+      const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      const CAT_EMOJI = { '학업': '📚', '교우관계': '🤝', '진로': '🧭', '가정': '🏠', '생활': '🌱' };
 
-      const fmt = (isoStr) => {
-        const [y, m, d] = isoStr.split('-').map(Number);
-        const wd = ['일', '월', '화', '수', '목', '금', '토'][new Date(y, m - 1, d).getDay()];
-        return `${m}월 ${d}일 (${wd})`;
-      };
-      const render = (meal, isToday) => {
-        dateEl.textContent = (isToday ? '' : '다음 급식 · ') + fmt(meal.date);
-        dishesEl.innerHTML = '';
-        meal.dishes.forEach((name) => {
-          const li = document.createElement('li');
-          li.textContent = name;
-          dishesEl.appendChild(li);
-        });
-        kcalEl.textContent = meal.kcal ? meal.kcal + ' kcal' : '';
-      };
+      const roster = load('manage-roster', []);
+      const records = load('counsel-records', []);
+      const grades = load('grades-data', { exams: [] });
 
-      fetch('menu.json', { cache: 'no-store' })
-        .then((r) => r.json())
-        .then((data) => {
-          const meals = (data.meals || []).filter((m) => m.type === '중식' || !m.type);
-          const today = meals.find((m) => m.date === todayISO);
-          if (today) { render(today, true); return; }
-          const next = meals.find((m) => m.date > todayISO);
-          if (next) { render(next, false); return; }
-          dateEl.textContent = todayISO ? fmt(todayISO) : '';
-          dishesEl.innerHTML = '<li class="meal-none">오늘은 급식이 없어요</li>';
-        })
-        .catch(() => {
-          dishesEl.innerHTML = '<li class="meal-none">급식 정보를 불러오지 못했어요</li>';
-        });
-    })();
+      document.getElementById('stStudents').textContent = roster.length;
+      document.getElementById('stRecords').textContent = records.length;
+      document.getElementById('stExams').textContent = grades.exams.length;
+      const dates = records.map((r) => r.date).filter(Boolean).sort();
+      document.getElementById('stLast').textContent = dates.length ? dates[dates.length - 1].slice(5).replace('-', '/') : '—';
 
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
-    }
+      const recent = records.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)) || b.id - a.id).slice(0, 5);
+      if (recent.length) {
+        document.getElementById('recentEmpty').classList.add('hidden');
+        document.getElementById('recentRecs').innerHTML = recent.map((r) => `
+          <div class="rec">
+            <div class="post-top">
+              <span class="rec-name">${esc(r.name)} <span class="tag">${CAT_EMOJI[r.cat] || ''} ${esc(r.cat)}</span></span>
+              <span class="post-time">${esc(r.date)}</span>
+            </div>
+            <div class="post-body">${esc(r.text.length > 90 ? r.text.slice(0, 90) + '…' : r.text)}</div>
+          </div>`).join('');
+      }
 
-    // ── 앱 설치 안내 ──
-    (function () {
-      const card = document.getElementById('installCard');
-      const btn = document.getElementById('installBtn');
-      const ios = document.getElementById('installIos');
-      const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-      if (standalone) return; // 이미 설치됨 → 숨김
-
-      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-      let deferred = null;
-
-      window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferred = e;
-        btn.hidden = false;
-        card.hidden = false;
-      });
-      btn.addEventListener('click', async () => {
-        if (!deferred) return;
-        deferred.prompt();
-        await deferred.userChoice;
-        deferred = null;
-        card.hidden = true;
-      });
-      window.addEventListener('appinstalled', () => { card.hidden = true; });
-
-      // iOS는 beforeinstallprompt가 없으므로 안내문 표시
-      if (isIOS) { ios.hidden = false; card.hidden = false; }
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+      }
     })();
   </script>
 </body>

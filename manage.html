@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#4f46e5" />
+  <title>학급 도구 — 2학년 3반 관리 콘솔</title>
+  <meta name="description" content="2학년 3반 학급 도구: 학생 명단, 발표자 뽑기, 모둠 편성, 자리 배치, 청소 당번" />
+  <link rel="stylesheet" href="admin.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%AB%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="index.html">2학년 3반 <span>관리 콘솔</span></a>
+      <nav class="nav-links">
+        <a href="index.html">대시보드</a>
+        <a href="counsel.html">학생·상담</a>
+        <a href="grades.html">성적</a>
+        <a href="manage.html" class="active">학급 도구</a>
+        <a href="student.html" class="nav-student">학생용 페이지 ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container manage-container">
+    <div class="page-head">
+      <h1>학급 도구</h1>
+      <p>명단 관리 · 발표자 뽑기 · 모둠 편성 · 자리 배치 · 청소 당번</p>
+    </div>
+    <div class="manage-grid">
+      <!-- 학생 명단 -->
+      <section class="card">
+        <h2 class="card-title">👧👦 학생 명단</h2>
+        <p class="help">이름을 쉼표(,)나 줄바꿈으로 구분해서 입력하세요. 이 컴퓨터에만 저장돼요.</p>
+        <textarea id="roster" rows="4" placeholder="예: 김하늘, 이도윤, 박서연&#10;최지우"></textarea>
+        <div class="row">
+          <button class="btn btn-block" id="saveRoster">명단 저장 💾</button>
+        </div>
+        <p class="save-status" id="rosterStatus"></p>
+        <div class="chip-list" id="rosterChips"></div>
+        <p class="empty-hint" id="rosterEmpty">아직 등록된 학생이 없어요.</p>
+      </section>
+
+      <!-- 발표자 뽑기 -->
+      <section class="card pick-card">
+        <h2 class="card-title">🎲 발표자 뽑기</h2>
+        <div class="pick-box" id="pickBox">누가 될까요? 👀</div>
+        <div class="row">
+          <button class="btn btn-block btn-pick" id="pickBtn">랜덤으로 뽑기 ✨</button>
+        </div>
+        <label class="check-label"><input type="checkbox" id="noRepeat" checked /> 한 번 뽑힌 사람은 제외 (전원 뽑히면 초기화)</label>
+        <p class="note" id="pickLeft"></p>
+      </section>
+
+      <!-- 모둠 편성 -->
+      <section class="card">
+        <h2 class="card-title">👥 모둠 편성</h2>
+        <div class="row" style="margin-bottom:12px">
+          <label class="inline-label" for="groupSize">한 모둠 인원</label>
+          <select id="groupSize">
+            <option value="2">2명</option>
+            <option value="3">3명</option>
+            <option value="4" selected>4명</option>
+            <option value="5">5명</option>
+            <option value="6">6명</option>
+          </select>
+          <button class="btn" id="groupBtn">모둠 짜기 🔀</button>
+        </div>
+        <div class="team-grid" id="groupResult"></div>
+      </section>
+
+      <!-- 청소 당번 -->
+      <section class="card">
+        <h2 class="card-title">🧹 청소 당번 배정</h2>
+        <p class="help">구역을 쉼표(,)나 줄바꿈으로 구분해서 입력하면 학생을 골고루 나눠줘요.</p>
+        <textarea id="areas" rows="2" placeholder="예: 교실 바닥, 복도, 창문, 칠판·정리"></textarea>
+        <div class="row">
+          <button class="btn btn-block" id="dutyBtn">당번 뽑기 🎯</button>
+        </div>
+        <div id="dutyResult"></div>
+      </section>
+
+      <!-- 자리 배치 -->
+      <section class="card span-2" id="seatCard">
+        <h2 class="card-title">🪑 자리 배치</h2>
+        <div class="row seat-controls" style="margin-bottom:12px">
+          <label class="inline-label" for="seatCols">한 줄 자리 수</label>
+          <select id="seatCols">
+            <option value="3">3자리</option>
+            <option value="4">4자리</option>
+            <option value="5">5자리</option>
+            <option value="6" selected>6자리</option>
+          </select>
+          <button class="btn" id="seatBtn">자리 섞기 🔀</button>
+        </div>
+        <p class="note" style="margin:0 0 10px">맨 윗줄이 교탁(칠판) 쪽이에요.</p>
+        <div id="seatResult"></div>
+      </section>
+    </div>
+
+    <footer class="foot"><span>결과는 이 컴퓨터에만 저장돼요 · 육민관중학교 2학년 3반 💗</span></footer>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const KEY = {
+      roster: 'manage-roster',
+      picked: 'manage-picked',
+      areas: 'manage-areas',
+      groups: 'manage-groups',
+      seats: 'manage-seats',
+      duty: 'manage-duty',
+    };
+    const load = (k, fallback) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fallback; } catch { return fallback; } };
+    const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const parseNames = (text) => [...new Set(text.split(/[,\n]/).map((s) => s.trim()).filter(Boolean))];
+    const shuffle = (arr) => {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    };
+
+    let roster = load(KEY.roster, []);
+    let picked = load(KEY.picked, []);
+
+    // ── 명단 ──
+    function renderRoster() {
+      $('rosterChips').innerHTML = roster.map((n) => `<span class="chip">${esc(n)}</span>`).join('');
+      $('rosterEmpty').classList.toggle('hidden', roster.length > 0);
+      $('pickLeft').textContent = roster.length ? `전체 ${roster.length}명 · 아직 안 뽑힌 사람 ${roster.length - picked.length}명` : '';
+    }
+    $('roster').value = roster.join(', ');
+    $('saveRoster').addEventListener('click', () => {
+      roster = parseNames($('roster').value);
+      picked = picked.filter((n) => roster.includes(n));
+      save(KEY.roster, roster); save(KEY.picked, picked);
+      $('rosterStatus').textContent = `✓ ${roster.length}명 저장했어요!`;
+      setTimeout(() => { $('rosterStatus').textContent = ''; }, 3000);
+      renderRoster();
+    });
+
+    // ── 발표자 뽑기 ──
+    let picking = false;
+    $('pickBtn').addEventListener('click', () => {
+      if (picking) return;
+      if (!roster.length) { alert('먼저 학생 명단을 저장해 주세요.'); return; }
+      let pool = roster;
+      if ($('noRepeat').checked) {
+        if (picked.length >= roster.length) picked = [];
+        pool = roster.filter((n) => !picked.includes(n));
+      }
+      const winner = pool[Math.floor(Math.random() * pool.length)];
+      picking = true;
+      const box = $('pickBox');
+      let ticks = 0;
+      const spin = setInterval(() => {
+        box.textContent = roster[Math.floor(Math.random() * roster.length)];
+        if (++ticks >= 14) {
+          clearInterval(spin);
+          box.textContent = `🎉 ${winner} 🎉`;
+          box.classList.remove('pick-pop'); void box.offsetWidth; box.classList.add('pick-pop');
+          if ($('noRepeat').checked) { picked.push(winner); save(KEY.picked, picked); }
+          renderRoster();
+          picking = false;
+        }
+      }, 70);
+    });
+
+    // ── 모둠 편성 ──
+    function renderGroups(groups) {
+      $('groupResult').innerHTML = groups.map((g, i) =>
+        `<div class="team"><div class="team-name">${i + 1}모둠 <small>(${g.length}명)</small></div><div class="team-members">${g.map((n) => `<span class="chip">${esc(n)}</span>`).join('')}</div></div>`
+      ).join('');
+    }
+    $('groupBtn').addEventListener('click', () => {
+      if (!roster.length) { alert('먼저 학생 명단을 저장해 주세요.'); return; }
+      const size = Number($('groupSize').value);
+      const mixed = shuffle(roster);
+      const count = Math.max(1, Math.round(mixed.length / size));
+      const groups = Array.from({ length: count }, () => []);
+      mixed.forEach((n, i) => groups[i % count].push(n));
+      save(KEY.groups, groups);
+      renderGroups(groups);
+    });
+    const savedGroups = load(KEY.groups, null);
+    if (savedGroups) renderGroups(savedGroups);
+
+    // ── 자리 배치 ──
+    function renderSeats(data) {
+      const { cols, seats } = data;
+      let html = '<div class="board-label">🖥️ 교탁</div><div class="seat-grid" style="grid-template-columns:repeat(' + cols + ',1fr)">';
+      html += seats.map((n) => n ? `<div class="seat">${esc(n)}</div>` : '<div class="seat seat-empty"></div>').join('');
+      html += '</div>';
+      $('seatResult').innerHTML = html;
+    }
+    $('seatBtn').addEventListener('click', () => {
+      if (!roster.length) { alert('먼저 학생 명단을 저장해 주세요.'); return; }
+      const cols = Number($('seatCols').value);
+      const seats = shuffle(roster);
+      while (seats.length % cols !== 0) seats.push('');
+      const data = { cols, seats };
+      save(KEY.seats, data);
+      renderSeats(data);
+    });
+    const savedSeats = load(KEY.seats, null);
+    if (savedSeats) renderSeats(savedSeats);
+
+    // ── 청소 당번 ──
+    $('areas').value = load(KEY.areas, []).join(', ');
+    function renderDuty(duty) {
+      $('dutyResult').innerHTML = '<ul class="duty-list" style="margin-top:12px">' + duty.map((d) =>
+        `<li><span class="duty-area">${esc(d.area)}</span><span class="duty-who">${d.members.map(esc).join(', ') || '—'}</span></li>`
+      ).join('') + '</ul>';
+    }
+    $('dutyBtn').addEventListener('click', () => {
+      if (!roster.length) { alert('먼저 학생 명단을 저장해 주세요.'); return; }
+      const areas = parseNames($('areas').value);
+      if (!areas.length) { alert('청소 구역을 입력해 주세요.'); return; }
+      save(KEY.areas, areas);
+      const mixed = shuffle(roster);
+      const duty = areas.map((area) => ({ area, members: [] }));
+      mixed.forEach((n, i) => duty[i % areas.length].members.push(n));
+      save(KEY.duty, duty);
+      renderDuty(duty);
+    });
+    const savedDuty = load(KEY.duty, null);
+    if (savedDuty) renderDuty(savedDuty);
+
+    renderRoster();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>
