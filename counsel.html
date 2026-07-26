@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ff9ecd" />
+  <title>상담 카드 — 2학년 3반</title>
+  <meta name="description" content="2학년 3반 학생 상담 기록 카드 (이 컴퓨터에만 저장)" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%9D%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="back-link" href="index.html" aria-label="홈으로">‹ 홈</a>
+    <h1>📝 상담 카드</h1>
+    <p class="subtitle">2학년 3반 · 학생 상담 기록 · 이 컴퓨터에만 저장돼요</p>
+  </header>
+
+  <main class="container manage-container">
+    <div class="manage-grid">
+      <!-- 상담 기록 작성 -->
+      <section class="card">
+        <h2 class="card-title">✏️ 상담 기록 작성</h2>
+        <div class="log-grid" style="margin-bottom:12px">
+          <div class="field">
+            <label for="cName">학생 이름</label>
+            <input type="text" id="cName" list="rosterList" maxlength="20" placeholder="이름 입력 또는 선택" />
+            <datalist id="rosterList"></datalist>
+          </div>
+          <div class="field">
+            <label for="cDate">상담 날짜</label>
+            <input type="date" id="cDate" style="max-width:none;width:100%" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="cCat">상담 영역</label>
+          <select id="cCat">
+            <option value="학업">📚 학업·학습</option>
+            <option value="교우관계">🤝 교우관계</option>
+            <option value="진로">🧭 진로</option>
+            <option value="가정">🏠 가정</option>
+            <option value="생활">🌱 생활·기타</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="cText">상담 내용</label>
+          <textarea id="cText" rows="4" placeholder="상담 내용을 기록하세요"></textarea>
+        </div>
+        <div class="field">
+          <label for="cNext">후속 조치 <span class="opt">(선택)</span></label>
+          <input type="text" id="cNext" maxlength="200" placeholder="예: 2주 뒤 재상담, 학부모 연락" />
+        </div>
+        <button class="btn btn-block btn-submit" id="cSave">기록 저장 💾</button>
+        <p class="save-status" id="cStatus"></p>
+      </section>
+
+      <!-- 학생별 요약 -->
+      <section class="card">
+        <h2 class="card-title">📊 학생별 상담 횟수</h2>
+        <p class="help">칩을 누르면 그 학생 기록만 볼 수 있어요.</p>
+        <div class="chip-list" id="countChips"></div>
+        <p class="empty-hint" id="countEmpty">아직 상담 기록이 없어요.</p>
+        <div id="catBars" style="margin-top:16px"></div>
+      </section>
+
+      <!-- 기록 목록 -->
+      <section class="card span-2">
+        <div class="board-head" style="margin:0 0 12px">
+          <h2 class="card-title" style="margin:0">🗂️ 상담 기록</h2>
+          <div class="row" style="gap:8px">
+            <select id="fName" style="min-width:130px"><option value="">전체 학생</option></select>
+            <select id="fCat" style="min-width:120px">
+              <option value="">전체 영역</option>
+              <option value="학업">학업·학습</option>
+              <option value="교우관계">교우관계</option>
+              <option value="진로">진로</option>
+              <option value="가정">가정</option>
+              <option value="생활">생활·기타</option>
+            </select>
+          </div>
+        </div>
+        <div id="recList"></div>
+        <p class="empty-hint" id="recEmpty">조건에 맞는 기록이 없어요.</p>
+      </section>
+    </div>
+
+    <footer class="foot"><span>상담 기록은 이 컴퓨터의 브라우저에만 저장돼요 🔒 · 육민관중학교 2학년 3반</span></footer>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const KEY = 'counsel-records';
+    const load = (k, fb) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fb; } catch { return fb; } };
+    const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const CAT_EMOJI = { '학업': '📚', '교우관계': '🤝', '진로': '🧭', '가정': '🏠', '생활': '🌱' };
+
+    let records = load(KEY, []);
+    const roster = load('manage-roster', []);
+
+    // 명단 datalist·필터 채우기
+    $('rosterList').innerHTML = roster.map((n) => `<option value="${esc(n)}">`).join('');
+    const fillNameFilter = () => {
+      const names = [...new Set([...roster, ...records.map((r) => r.name)])];
+      const cur = $('fName').value;
+      $('fName').innerHTML = '<option value="">전체 학생</option>' + names.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+      $('fName').value = names.includes(cur) ? cur : '';
+    };
+
+    // 오늘 날짜 기본값
+    const pad = (n) => String(n).padStart(2, '0');
+    const t = new Date();
+    $('cDate').value = `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`;
+
+    function renderCounts() {
+      const byName = {};
+      records.forEach((r) => { byName[r.name] = (byName[r.name] || 0) + 1; });
+      const names = Object.keys(byName).sort((a, b) => byName[b] - byName[a]);
+      $('countChips').innerHTML = names.map((n) =>
+        `<button class="chip chip-btn" data-name="${esc(n)}">${esc(n)} <b>${byName[n]}</b></button>`
+      ).join('');
+      $('countEmpty').classList.toggle('hidden', records.length > 0);
+
+      // 영역별 막대
+      const byCat = {};
+      records.forEach((r) => { byCat[r.cat] = (byCat[r.cat] || 0) + 1; });
+      const maxCat = Math.max(1, ...Object.values(byCat));
+      $('catBars').innerHTML = records.length ? '<p class="sub-h">영역별 상담 분포</p>' + Object.entries(byCat).map(([cat, n]) =>
+        `<div class="bar-row"><span class="bar-label">${CAT_EMOJI[cat] || ''} ${esc(cat)}</span><span class="bar-track"><span class="bar-fill" style="width:${Math.round(n / maxCat * 100)}%"></span></span><span class="bar-val">${n}건</span></div>`
+      ).join('') : '';
+    }
+
+    function renderList() {
+      const fn = $('fName').value, fc = $('fCat').value;
+      const list = records
+        .filter((r) => (!fn || r.name === fn) && (!fc || r.cat === fc))
+        .slice().sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+      $('recList').innerHTML = list.map((r) => `
+        <div class="post rec">
+          <div class="post-top">
+            <span class="post-name rec-name">${esc(r.name)} <span class="tag">${CAT_EMOJI[r.cat] || ''} ${esc(r.cat)}</span></span>
+            <span class="post-time">${esc(r.date)} <button class="del-btn" data-del="${r.id}">삭제</button></span>
+          </div>
+          <div class="post-body">${esc(r.text)}</div>
+          ${r.next ? `<div class="rec-next">👉 후속 조치: ${esc(r.next)}</div>` : ''}
+        </div>`).join('');
+      $('recEmpty').classList.toggle('hidden', list.length > 0);
+    }
+
+    function renderAll() { fillNameFilter(); renderCounts(); renderList(); }
+
+    $('cSave').addEventListener('click', () => {
+      const name = $('cName').value.trim();
+      const text = $('cText').value.trim();
+      if (!name) { alert('학생 이름을 입력해 주세요.'); return; }
+      if (!text) { alert('상담 내용을 입력해 주세요.'); return; }
+      records.push({ id: Date.now(), name, date: $('cDate').value || '', cat: $('cCat').value, text, next: $('cNext').value.trim() });
+      save(KEY, records);
+      $('cText').value = ''; $('cNext').value = '';
+      $('cStatus').textContent = '✓ 기록을 저장했어요!';
+      setTimeout(() => { $('cStatus').textContent = ''; }, 3000);
+      renderAll();
+    });
+
+    $('recList').addEventListener('click', (e) => {
+      const id = e.target.getAttribute('data-del');
+      if (!id) return;
+      if (!confirm('이 상담 기록을 삭제할까요?')) return;
+      records = records.filter((r) => String(r.id) !== id);
+      save(KEY, records);
+      renderAll();
+    });
+
+    $('countChips').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-name]');
+      if (!btn) return;
+      $('fName').value = btn.getAttribute('data-name');
+      renderList();
+    });
+
+    $('fName').addEventListener('change', renderList);
+    $('fCat').addEventListener('change', renderList);
+
+    renderAll();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>

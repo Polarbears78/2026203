@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ff9ecd" />
+  <title>성적 자료 — 2학년 3반</title>
+  <meta name="description" content="2학년 3반 성적 입력·분석 (이 컴퓨터에만 저장)" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%88%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="back-link" href="index.html" aria-label="홈으로">‹ 홈</a>
+    <h1>📈 성적 자료</h1>
+    <p class="subtitle">2학년 3반 · 성적 입력·분석 · 이 컴퓨터에만 저장돼요</p>
+  </header>
+
+  <main class="container manage-container">
+    <!-- 시험 선택 -->
+    <section class="card">
+      <h2 class="card-title">🗃️ 시험 선택</h2>
+      <div class="row exam-controls">
+        <select id="examSel" style="min-width:180px"></select>
+        <input type="text" id="newExamName" maxlength="30" placeholder="새 시험 이름 (예: 1학기 기말)" style="flex:1;padding:12px 14px;border:1.5px solid var(--border);border-radius:14px;font:inherit;background:#fffafd" />
+        <button class="btn" id="addExam">시험 추가 ➕</button>
+        <button class="btn btn-danger" id="delExam">삭제 🗑️</button>
+      </div>
+      <p class="note" id="rosterHint" style="margin:10px 0 0"></p>
+    </section>
+
+    <div class="manage-grid">
+      <!-- 점수 입력 -->
+      <section class="card">
+        <h2 class="card-title">✏️ 점수 입력</h2>
+        <p class="help">0~100점으로 입력하세요. 빈칸은 미응시로 계산에서 제외돼요.</p>
+        <div class="table-wrap">
+          <table class="stats-table score-table" id="scoreTable"></table>
+        </div>
+        <button class="btn btn-block" id="saveScores" style="margin-top:12px">점수 저장 💾</button>
+        <p class="save-status" id="scoreStatus"></p>
+      </section>
+
+      <!-- 과목별 분석 -->
+      <section class="card">
+        <h2 class="card-title">📊 과목별 분석</h2>
+        <div id="subjectStats"></div>
+        <p class="empty-hint" id="subjectEmpty">점수를 입력하면 분석이 표시돼요.</p>
+      </section>
+
+      <!-- 학생별 석차 -->
+      <section class="card">
+        <h2 class="card-title">🏅 학생별 총점·석차</h2>
+        <div class="table-wrap">
+          <table class="stats-table" id="rankTable"></table>
+        </div>
+        <p class="empty-hint" id="rankEmpty">점수를 입력하면 석차가 표시돼요.</p>
+      </section>
+
+      <!-- 학생 개인 분석 -->
+      <section class="card">
+        <h2 class="card-title">🔍 학생 개인 분석</h2>
+        <div class="row" style="margin-bottom:14px">
+          <label class="inline-label" for="studentSel">학생 선택</label>
+          <select id="studentSel"></select>
+        </div>
+        <div id="studentDetail"></div>
+        <p class="empty-hint" id="studentEmpty">학생을 선택하면 반 평균과 비교해줘요.</p>
+      </section>
+    </div>
+
+    <footer class="foot"><span>성적 자료는 이 컴퓨터의 브라우저에만 저장돼요 🔒 · 육민관중학교 2학년 3반</span></footer>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const KEY = 'grades-data';
+    const SUBJECTS = ['국어', '수학', '영어', '과학', '사회'];
+    const load = (k, fb) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fb; } catch { return fb; } };
+    const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const r1 = (n) => Math.round(n * 10) / 10;
+
+    const roster = load('manage-roster', []);
+    let db = load(KEY, { exams: [] });
+    if (!db.exams.length) db.exams.push({ id: 1, name: '1학기 중간고사', scores: {} });
+    let curId = db.exams[db.exams.length - 1].id;
+
+    const cur = () => db.exams.find((e) => e.id === curId) || db.exams[0];
+
+    $('rosterHint').textContent = roster.length
+      ? `학생 명단 ${roster.length}명 — 명단은 ‘학급 관리’ 페이지에서 관리해요.`
+      : '⚠ 학생 명단이 비어 있어요. 먼저 [학급 관리] 페이지에서 명단을 저장해 주세요.';
+
+    // ── 시험 선택 ──
+    function renderExamSel() {
+      $('examSel').innerHTML = db.exams.map((e) => `<option value="${e.id}"${e.id === curId ? ' selected' : ''}>${esc(e.name)}</option>`).join('');
+    }
+    $('examSel').addEventListener('change', () => { curId = Number($('examSel').value); renderAll(); });
+    $('addExam').addEventListener('click', () => {
+      const name = $('newExamName').value.trim();
+      if (!name) { alert('시험 이름을 입력해 주세요.'); return; }
+      const id = Math.max(0, ...db.exams.map((e) => e.id)) + 1;
+      db.exams.push({ id, name, scores: {} });
+      curId = id;
+      $('newExamName').value = '';
+      save(KEY, db);
+      renderAll();
+    });
+    $('delExam').addEventListener('click', () => {
+      if (db.exams.length <= 1) { alert('시험이 최소 1개는 있어야 해요.'); return; }
+      if (!confirm(`‘${cur().name}’ 시험과 점수를 모두 삭제할까요?`)) return;
+      db.exams = db.exams.filter((e) => e.id !== curId);
+      curId = db.exams[db.exams.length - 1].id;
+      save(KEY, db);
+      renderAll();
+    });
+
+    // ── 점수 입력 표 ──
+    function renderInput() {
+      const exam = cur();
+      let html = '<thead><tr><th>이름</th>' + SUBJECTS.map((s) => `<th>${s}</th>`).join('') + '</tr></thead><tbody>';
+      html += roster.map((name) => {
+        const row = exam.scores[name] || {};
+        return `<tr><td class="c-name">${esc(name)}</td>` + SUBJECTS.map((s) =>
+          `<td><input type="number" class="score-in" min="0" max="100" data-name="${esc(name)}" data-sub="${s}" value="${row[s] ?? ''}" /></td>`
+        ).join('') + '</tr>';
+      }).join('');
+      $('scoreTable').innerHTML = html + '</tbody>';
+    }
+    $('saveScores').addEventListener('click', () => {
+      const exam = cur();
+      exam.scores = {};
+      document.querySelectorAll('.score-in').forEach((inp) => {
+        const v = inp.value.trim();
+        if (v === '') return;
+        const n = Math.max(0, Math.min(100, Number(v)));
+        const name = inp.getAttribute('data-name'), sub = inp.getAttribute('data-sub');
+        (exam.scores[name] = exam.scores[name] || {})[sub] = n;
+      });
+      save(KEY, db);
+      $('scoreStatus').textContent = '✓ 점수를 저장했어요!';
+      setTimeout(() => { $('scoreStatus').textContent = ''; }, 3000);
+      renderAnalysis();
+    });
+
+    // ── 분석 ──
+    const subjectValues = (exam, sub) => Object.values(exam.scores).map((r) => r[sub]).filter((v) => typeof v === 'number');
+    const studentAvg = (row) => {
+      const vals = SUBJECTS.map((s) => row[s]).filter((v) => typeof v === 'number');
+      return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+    };
+
+    function renderAnalysis() {
+      const exam = cur();
+      const hasData = Object.keys(exam.scores).length > 0;
+
+      // 과목별 평균·최고·최저
+      $('subjectEmpty').classList.toggle('hidden', hasData);
+      $('subjectStats').innerHTML = !hasData ? '' : SUBJECTS.map((s) => {
+        const vals = subjectValues(exam, s);
+        if (!vals.length) return '';
+        const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+        return `<div class="bar-row"><span class="bar-label">${s}</span><span class="bar-track"><span class="bar-fill" style="width:${Math.round(avg)}%"></span></span><span class="bar-val">${r1(avg)}점</span><span class="bar-mm">최고 ${Math.max(...vals)} · 최저 ${Math.min(...vals)}</span></div>`;
+      }).join('');
+
+      // 학생별 총점·석차
+      const rows = Object.entries(exam.scores).map(([name, row]) => {
+        const vals = SUBJECTS.map((s) => row[s]).filter((v) => typeof v === 'number');
+        return { name, total: vals.reduce((a, b) => a + b, 0), count: vals.length, avg: studentAvg(row) };
+      }).filter((r) => r.count > 0).sort((a, b) => b.total - a.total);
+      rows.forEach((r, i) => { r.rank = i > 0 && rows[i - 1].total === r.total ? rows[i - 1].rank : i + 1; });
+      $('rankEmpty').classList.toggle('hidden', rows.length > 0);
+      $('rankTable').innerHTML = !rows.length ? '' :
+        '<thead><tr><th>석차</th><th>이름</th><th>총점</th><th>평균</th></tr></thead><tbody>' +
+        rows.map((r) => `<tr><td class="c-num">${r.rank}등</td><td class="c-name">${esc(r.name)}</td><td class="c-total">${r.total}</td><td>${r1(r.avg)}</td></tr>`).join('') +
+        '</tbody>';
+
+      renderStudent();
+    }
+
+    // ── 학생 개인 분석 ──
+    function renderStudentSel() {
+      const names = [...new Set([...roster, ...db.exams.flatMap((e) => Object.keys(e.scores))])];
+      $('studentSel').innerHTML = '<option value="">선택하세요</option>' + names.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    }
+    function renderStudent() {
+      const name = $('studentSel').value;
+      const exam = cur();
+      if (!name) { $('studentDetail').innerHTML = ''; $('studentEmpty').classList.remove('hidden'); return; }
+      $('studentEmpty').classList.add('hidden');
+      const row = exam.scores[name] || {};
+      let html = `<p class="sub-h">${esc(cur().name)} — ${esc(name)} vs 반 평균</p>`;
+      let any = false;
+      SUBJECTS.forEach((s) => {
+        if (typeof row[s] !== 'number') return;
+        any = true;
+        const vals = subjectValues(exam, s);
+        const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+        const diff = row[s] - avg;
+        html += `<div class="bar-pair"><div class="bar-row"><span class="bar-label">${s}</span><span class="bar-track"><span class="bar-fill" style="width:${row[s]}%"></span></span><span class="bar-val">${row[s]}점</span><span class="bar-mm ${diff >= 0 ? 'diff-up' : 'diff-down'}">${diff >= 0 ? '▲' : '▼'} ${r1(Math.abs(diff))}</span></div><div class="bar-row bar-sub"><span class="bar-label">반평균</span><span class="bar-track"><span class="bar-fill alt" style="width:${Math.round(avg)}%"></span></span><span class="bar-val">${r1(avg)}점</span><span class="bar-mm"></span></div></div>`;
+      });
+      if (!any) html += '<p class="empty-hint">이 시험에 입력된 점수가 없어요.</p>';
+
+      // 시험별 추이
+      const trend = db.exams.map((e) => {
+        const a = e.scores[name] ? studentAvg(e.scores[name]) : null;
+        const classAvgs = Object.values(e.scores).map(studentAvg).filter((v) => v !== null);
+        const c = classAvgs.length ? classAvgs.reduce((x, y) => x + y, 0) / classAvgs.length : null;
+        return { name: e.name, mine: a, cls: c };
+      }).filter((t) => t.mine !== null);
+      if (trend.length > 1) {
+        html += '<p class="sub-h" style="margin-top:16px">시험별 평균 추이 (나 vs 반)</p>';
+        trend.forEach((tr) => {
+          html += `<div class="bar-pair"><div class="bar-row"><span class="bar-label bar-label-w">${esc(tr.name)}</span><span class="bar-track"><span class="bar-fill" style="width:${Math.round(tr.mine)}%"></span></span><span class="bar-val">${r1(tr.mine)}</span><span class="bar-mm"></span></div><div class="bar-row bar-sub"><span class="bar-label bar-label-w">반평균</span><span class="bar-track"><span class="bar-fill alt" style="width:${Math.round(tr.cls)}%"></span></span><span class="bar-val">${r1(tr.cls)}</span><span class="bar-mm"></span></div></div>`;
+        });
+      }
+      $('studentDetail').innerHTML = html;
+    }
+    $('studentSel').addEventListener('change', renderStudent);
+
+    function renderAll() { renderExamSel(); renderInput(); renderStudentSel(); renderAnalysis(); }
+    renderAll();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>
