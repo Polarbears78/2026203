@@ -95,10 +95,16 @@
             <option value="5">5자리</option>
             <option value="6" selected>6자리</option>
           </select>
+          <label class="inline-label" for="seatView">보기</label>
+          <select id="seatView">
+            <option value="student">학생용 (칠판 위)</option>
+            <option value="teacher">교사용 (칠판 아래)</option>
+          </select>
           <button class="btn" id="seatBtn">이 달 자리 섞기 🔀</button>
+          <button class="btn btn-ghost" id="seatPdf">🖨️ PDF 저장</button>
           <button class="btn btn-danger" id="seatDel">이 달 삭제</button>
         </div>
-        <p class="note" style="margin:0 0 10px">맨 윗줄이 교탁(칠판) 쪽이에요. 달마다 배치가 따로 저장돼요.</p>
+        <p class="note" style="margin:0 0 10px">달마다 배치가 따로 저장돼요. <b>자리를 눌러 선택한 뒤 다른 자리를 누르면 두 자리가 서로 바뀌어요.</b></p>
         <p class="note" id="seatSavedInfo" style="margin:0 0 10px"></p>
         <div id="seatResult"></div>
       </section>
@@ -206,6 +212,18 @@
       if (legacy) seatsAll[ymNow()] = legacy;
     }
     $('seatMonth').value = ymNow();
+
+    // 보기 방향: 학생용(칠판 위) / 교사용(칠판 아래 = 180도 회전)
+    let seatView = load('manage-seat-view', 'student');
+    $('seatView').value = seatView;
+    $('seatView').addEventListener('change', () => {
+      seatView = $('seatView').value;
+      save('manage-seat-view', seatView);
+      selIdx = null;
+      renderSeats();
+    });
+
+    let selIdx = null; // 수동 편집: 선택된 자리(원본 인덱스)
     function renderSeats() {
       const ym = $('seatMonth').value || ymNow();
       const months = Object.keys(seatsAll).sort();
@@ -216,11 +234,75 @@
         return;
       }
       const { cols, seats } = data;
-      let html = '<div class="board-label">🖥️ 교탁 — ' + fmtYm(ym) + '</div><div class="seat-grid" style="grid-template-columns:repeat(' + cols + ',1fr)">';
-      html += seats.map((n) => n ? `<div class="seat">${esc(n)}</div>` : '<div class="seat seat-empty"></div>').join('');
-      html += '</div>';
-      $('seatResult').innerHTML = html;
+      const teacher = seatView === 'teacher';
+      // 교사용 보기는 교실 앞에서 바라본 모습 → 배열을 180도 회전(역순)
+      const order = seats.map((_, i) => i);
+      const disp = teacher ? order.slice().reverse() : order;
+      const board = `<div class="board-label">🖥️ 교탁 — ${fmtYm(ym)}${teacher ? ' · 교사용 보기' : ''}</div>`;
+      let grid = '<div class="seat-grid" style="grid-template-columns:repeat(' + cols + ',1fr)">';
+      grid += disp.map((oi) => {
+        const n = seats[oi];
+        const cls = 'seat' + (n ? '' : ' seat-empty') + (selIdx === oi ? ' seat-sel' : '');
+        return `<button type="button" class="${cls}" data-oi="${oi}">${n ? esc(n) : ''}</button>`;
+      }).join('') + '</div>';
+      $('seatResult').innerHTML = teacher ? grid + board : board + grid;
     }
+
+    // 수동 편집: 자리 두 개를 차례로 누르면 서로 교환
+    $('seatResult').addEventListener('click', (e) => {
+      const el = e.target.closest('[data-oi]');
+      if (!el) return;
+      const ym = $('seatMonth').value || ymNow();
+      const data = seatsAll[ym];
+      if (!data) return;
+      const oi = Number(el.dataset.oi);
+      if (selIdx === null) selIdx = oi;
+      else if (selIdx === oi) selIdx = null;
+      else {
+        [data.seats[selIdx], data.seats[oi]] = [data.seats[oi], data.seats[selIdx]];
+        selIdx = null;
+        save('manage-seats-monthly', seatsAll);
+      }
+      renderSeats();
+    });
+
+    // 출력용 PDF 저장 (인쇄 창 → 'PDF로 저장')
+    $('seatPdf').addEventListener('click', () => {
+      const ym = $('seatMonth').value || ymNow();
+      const data = seatsAll[ym];
+      if (!data) { alert('먼저 이 달의 자리 배치를 만들어 주세요.'); return; }
+      const win = window.open('', '_blank');
+      if (!win) { alert('팝업이 차단됐어요. 이 사이트의 팝업을 허용해 주세요.'); return; }
+      const { cols, seats } = data;
+      const teacher = seatView === 'teacher';
+      const order = seats.map((_, i) => i);
+      const disp = teacher ? order.slice().reverse() : order;
+      let table = '<table>';
+      for (let r = 0; r < disp.length / cols; r++) {
+        table += '<tr>' + disp.slice(r * cols, r * cols + cols).map((oi) =>
+          `<td${seats[oi] ? '' : ' class="empty"'}>${esc(seats[oi] || '')}</td>`).join('') + '</tr>';
+      }
+      table += '</table>';
+      const board = '<div class="board">🖥️ 교탁 (칠판)</div>';
+      const h = `<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>자리 배치표 — 2학년 3반</title><style>
+        @page { size: A4 landscape; margin: 12mm; }
+        body{font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;padding:10px;color:#111}
+        h1{font-size:20px;margin:0 0 2px;text-align:center}
+        .sub{text-align:center;color:#555;font-size:13px;margin:0 0 14px}
+        table{border-collapse:collapse;width:100%;table-layout:fixed}
+        td{border:1.5px solid #333;height:58px;text-align:center;font-size:17px;font-weight:700;word-break:keep-all}
+        td.empty{background:#f2f2f2}
+        .board{border:2px solid #333;background:#e8e8e8;text-align:center;padding:9px;font-weight:700;margin:12px 0;border-radius:6px}
+      </style></head><body>
+        <h1>2학년 3반 자리 배치표</h1>
+        <p class="sub">${fmtYm(ym)} · ${teacher ? '교사용 보기 (칠판이 아래)' : '학생용 보기 (칠판이 위)'}</p>
+        ${teacher ? table + board : board + table}
+      </body></html>`;
+      win.document.write(h);
+      win.document.close();
+      win.focus();
+      setTimeout(() => win.print(), 300);
+    });
     $('seatBtn').addEventListener('click', () => {
       if (!roster.length) { alert('먼저 학생 명단을 저장해 주세요.'); return; }
       const ym = $('seatMonth').value || ymNow();
