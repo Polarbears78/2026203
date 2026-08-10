@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ff9ecd" />
+  <title>주간시간표 — 2학년 3반</title>
+  <meta name="description" content="2학년 3반 주간시간표" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="시간표" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%8F%B0%3C/text%3E%3C/svg%3E" />
+  <style>
+    /* ── 오늘의 시간표 ── */
+    .today-list { list-style: none; margin: 0; padding: 0; }
+    .today-list li {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; border-radius: 14px; margin-bottom: 6px;
+    }
+    .today-list li:last-child { margin-bottom: 0; }
+    .today-list .p-num {
+      flex: 0 0 30px; height: 30px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: #fff; font-family: var(--cute); font-size: .95rem;
+      box-shadow: 0 1px 4px rgba(190,130,170,.2);
+    }
+    .today-list .p-subj { font-weight: 800; font-size: 1rem; }
+    .today-list .p-teacher { margin-left: auto; font-size: .8rem; color: var(--muted); font-weight: 600; }
+    .today-empty { text-align: center; color: var(--muted); padding: 10px 0; }
+
+    /* ── 주간 표 ── */
+    .tt-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -4px; padding: 0 4px; }
+    table.tt { border-collapse: separate; border-spacing: 4px; width: 100%; min-width: 560px; }
+    .tt th, .tt td { text-align: center; border-radius: 12px; }
+    .tt thead th {
+      font-family: var(--cute); font-weight: 400; font-size: .95rem;
+      padding: 8px 4px; background: #f6eefc; color: #7a5f92;
+    }
+    .tt thead th.today-col { background: linear-gradient(135deg, #ff9ecd, #b58cf0); color: #fff; }
+    .tt .pnum {
+      font-family: var(--cute); font-size: .9rem; color: var(--muted);
+      background: #faf3f9; width: 34px; padding: 8px 0;
+    }
+    .tt td.cls { padding: 7px 3px; font-size: .82rem; line-height: 1.3; }
+    .tt td.cls b { display: block; font-size: .86rem; }
+    .tt td.cls small { color: rgba(74,59,86,.55); font-size: .68rem; font-weight: 600; }
+    .tt td.empty { background: #f7f2f7; }
+    .tt td.today-col { outline: 2px solid #ffb3d1; outline-offset: -2px; }
+
+    /* 과목별 파스텔 색 */
+    .s-국어 { background: #ffe9f2; } .s-수학 { background: #e5ecff; }
+    .s-영어, .s-영어회화 { background: #efe4ff; } .s-과학 { background: #e2f7ea; }
+    .s-역사 { background: #fff0dd; } .s-도덕 { background: #dff5f5; }
+    .s-한문 { background: #fdf3d8; } .s-기술가정 { background: #eef7dc; }
+    .s-체육, .s-스포츠 { background: #ddf1fc; } .s-미술 { background: #fde4ee; }
+    .s-자율 { background: #eeeaf2; }
+
+    .tt-note { font-size: .78rem; color: var(--muted); margin-top: 10px; line-height: 1.6; }
+    .tt-summary { font-size: .8rem; color: var(--muted); text-align: center; margin: -4px 0 12px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="back-link" href="index.html" aria-label="홈으로">‹ 홈</a>
+    <h1>⏰ 주간시간표</h1>
+    <p class="subtitle">2학년 3반 · 주 32시간</p>
+  </header>
+
+  <main class="container">
+    <section class="card" id="todayCard">
+      <h2 class="card-title" id="todayTitle">🌟 오늘의 시간표</h2>
+      <ul class="today-list" id="todayList"></ul>
+      <p class="today-empty" id="todayEmpty" hidden>오늘은 수업이 없어요! 푹 쉬어요 🛌</p>
+    </section>
+
+    <p class="tt-summary">국어4 · 수학3 · 과학4 · 영어2+회화1 · 역사3 · 도덕2 · 한문3<br>기술가정3 · 체육3+스포츠1 · 미술2 · 자율1</p>
+
+    <section class="card">
+      <h2 class="card-title">🗓️ 한 주 전체 보기</h2>
+      <div class="tt-scroll">
+        <table class="tt" id="ttTable"></table>
+      </div>
+      <p class="tt-note">※ 월·화 7교시, 수·목·금 6교시 운영 · 과목 아래는 담당 선생님</p>
+    </section>
+
+    <footer class="foot"><span>육민관중학교 2학년 3반 💗</span></footer>
+  </main>
+
+  <script>
+    const DAYS = ['월', '화', '수', '목', '금'];
+    const TT = {
+      '월': [['기술가정','김규리'],['기술가정','김규리'],['수학','김영철'],['국어','이현미'],['한문','정은선'],['역사','이언종'],['과학','김재원']],
+      '화': [['국어','이현미'],['미술','전지수'],['미술','전지수'],['역사','이언종'],['체육','함승호'],['도덕','조은수'],['영어회화','유태현·앤드류']],
+      '수': [['과학','김재원'],['기술가정','김규리'],['도덕','조은수'],['수학','김영철'],['체육','함승호'],['자율','김재원']],
+      '목': [['영어','유태현'],['국어','이현미'],['스포츠','함승호·이용숙'],['수학','김영철'],['과학','김재원'],['한문','정은선']],
+      '금': [['체육','함승호'],['영어','유태현'],['과학','김재원'],['한문','정은선'],['국어','이현미'],['역사','이언종']],
+    };
+    const MAX_P = 7;
+    const todayIdx = new Date().getDay() - 1; // 월=0 … 금=4 (일=-1, 토=5)
+    const isSchoolDay = todayIdx >= 0 && todayIdx <= 4;
+
+    // ── 오늘의 시간표 ──
+    const list = document.getElementById('todayList');
+    if (isSchoolDay) {
+      const day = DAYS[todayIdx];
+      document.getElementById('todayTitle').textContent = `🌟 오늘의 시간표 (${day}요일)`;
+      TT[day].forEach(([subj, teacher], i) => {
+        const li = document.createElement('li');
+        li.className = 's-' + subj;
+        li.innerHTML = `<span class="p-num">${i + 1}</span><span class="p-subj">${subj}</span><span class="p-teacher">${teacher}</span>`;
+        list.appendChild(li);
+      });
+    } else {
+      document.getElementById('todayEmpty').hidden = false;
+    }
+
+    // ── 주간 표 ──
+    const table = document.getElementById('ttTable');
+    let html = '<thead><tr><th></th>';
+    DAYS.forEach((d, i) => {
+      html += `<th${i === todayIdx ? ' class="today-col"' : ''}>${d}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+    for (let p = 0; p < MAX_P; p++) {
+      html += `<tr><td class="pnum">${p + 1}</td>`;
+      DAYS.forEach((d, i) => {
+        const cell = TT[d][p];
+        const todayCls = i === todayIdx ? ' today-col' : '';
+        if (cell) {
+          html += `<td class="cls s-${cell[0]}${todayCls}"><b>${cell[0]}</b><small>${cell[1]}</small></td>`;
+        } else {
+          html += `<td class="empty${todayCls}"></td>`;
+        }
+      });
+      html += '</tr>';
+    }
+    html += '</tbody>';
+    table.innerHTML = html;
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>

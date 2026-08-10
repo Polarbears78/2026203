@@ -199,6 +199,8 @@ textarea { resize: vertical; margin: 10px 0; }
 .menu-survey .menu-emoji { background: #fbe0f1; }
 .menu-exam { background: #f3ecff; border-color: #e2d4ff; }
 .menu-exam .menu-emoji { background: #e7dbff; }
+.menu-timetable { background: #fff9e4; border-color: #f5e7b8; }
+.menu-timetable .menu-emoji { background: #fbf0cc; }
 
 /* ===== 뒤로가기 링크 ===== */
 .back-link {
