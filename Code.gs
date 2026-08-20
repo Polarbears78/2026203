@@ -5,6 +5,8 @@
  * - 통계 페이지 읽기(GET action=studyStats) → '학습기록' 데이터를 JSONP로 반환
  * - 콘텐츠 게시(type=publish, 관리자 키 필요) → '콘텐츠' 탭  ※ 관리 콘솔 전용
  * - 콘텐츠 읽기(GET action=content) → 주간안내·공지사항 JSONP 반환
+ * - 방배정 희망조사(type=room) → '방배정설문' 탭
+ * - 방배정 읽기(GET action=roomSurvey) → 교사용 배정 페이지에 JSONP 반환
  * 설정 방법은 SHEET_SETUP.md 참고.
  * ※ 콘텐츠 게시를 쓰려면 [프로젝트 설정 → 스크립트 속성]에 ADMIN_KEY를 등록하세요.
  */
@@ -32,6 +34,14 @@ function doPost(e) {
       log.appendRow([
         new Date(), d.date || '', d.num || '', d.name || '',
         d.kor || '', d.math || '', d.eng || '', d.word || '', d.sci || '', d.reading || ''
+      ]);
+    } else if (d.type === 'room') {
+      // 수학여행 방배정 희망 조사
+      var rm = ss.getSheetByName('방배정설문') || ss.insertSheet('방배정설문');
+      if (rm.getLastRow() === 0) rm.appendRow(['제출시각', '번호', '이름', '성별', '1순위', '2순위', '기피']);
+      rm.appendRow([
+        new Date(), d.num || '', d.name || '', d.gender || '',
+        d.p1 || '', d.p2 || '', d.avoid || ''
       ]);
     } else if (d.type === 'publish') {
       // 관리 콘솔 → 주간안내·공지사항 게시 (ADMIN_KEY 검증)
@@ -152,6 +162,34 @@ function doGet(e) {
         .setMimeType(ContentService.MimeType.JAVASCRIPT);
     }
     return ContentService.createTextOutput(bpayload).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  if (p.action === 'roomSurvey') {
+    // 방배정 희망 조사 읽기 (교사용 배정 페이지)
+    var rpayload;
+    try {
+      var rsh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('방배정설문');
+      var rrows = [];
+      if (rsh && rsh.getLastRow() > 1) {
+        var rvals = rsh.getRange(2, 1, rsh.getLastRow() - 1, 7).getValues();
+        for (var m = 0; m < rvals.length; m++) {
+          var rv = rvals[m];
+          if (!rv[1]) continue;
+          rrows.push({
+            num: rv[1], name: String(rv[2] || ''), gender: String(rv[3] || ''),
+            p1: rv[4] || '', p2: rv[5] || '', avoid: rv[6] || ''
+          });
+        }
+      }
+      rpayload = JSON.stringify({ ok: true, rows: rrows });
+    } catch (err) {
+      rpayload = JSON.stringify({ ok: false, message: String(err) });
+    }
+    if (cb) {
+      return ContentService.createTextOutput(cb + '(' + rpayload + ')')
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+    return ContentService.createTextOutput(rpayload).setMimeType(ContentService.MimeType.JSON);
   }
 
   if (p.action === 'content') {

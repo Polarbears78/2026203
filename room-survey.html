@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ff9ecd" />
+  <title>수학여행 방배정 설문 — 2학년 3반</title>
+  <meta name="description" content="수학여행 방배정을 위한 희망 조사" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="방배정 설문" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9B%8C%3C/text%3E%3C/svg%3E" />
+  <style>
+    .gender-row { display: flex; gap: 10px; }
+    .gender-row label {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 12px; border: 2px solid var(--border); border-radius: 14px;
+      background: #fffafd; font-weight: 800; cursor: pointer;
+    }
+    .gender-row input { accent-color: #ff8ab8; }
+    .gender-row label:has(input:checked) { border-color: #ffb3d1; background: #ffeef6; }
+    .secret {
+      background: #fff6e5; border: 1.5px solid #f5deb0; border-radius: 14px;
+      padding: 10px 12px; font-size: .84rem; color: #8a6a2f; margin: 0 0 12px;
+    }
+    .pri { font-size: .78rem; color: var(--muted); margin: 6px 0 0; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="back-link" href="index.html" aria-label="홈으로">‹ 홈</a>
+    <h1>🛌 방배정 희망 조사</h1>
+    <p class="subtitle">2학년 3반 · 수학여행</p>
+  </header>
+
+  <main class="container">
+    <section class="card intro-card">
+      <p class="intro">수학여행 방을 정하기 위한 조사예요. <b>같은 방을 하고 싶은 친구</b>를 1·2순위로 골라 주세요. 최대한 반영하지만 방 인원과 다른 친구들의 희망도 있어서 <b>모두 이루어지지는 않을 수 있어요.</b> 🙏</p>
+    </section>
+
+    <section class="card">
+      <div class="field">
+        <label for="num">내 번호</label>
+        <select id="num"><option value="">번호를 선택하세요</option></select>
+      </div>
+      <div class="field">
+        <label for="name">내 이름</label>
+        <input type="text" id="name" placeholder="이름을 입력하세요" />
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>성별</label>
+        <div class="gender-row">
+          <label><input type="radio" name="gender" value="남" /> 남</label>
+          <label><input type="radio" name="gender" value="여" /> 여</label>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">💛 같은 방을 하고 싶은 친구</h2>
+      <div class="field">
+        <label for="p1">1순위 <span class="unit">가장 하고 싶은 친구</span></label>
+        <select id="p1"><option value="">선택하세요</option></select>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label for="p2">2순위 <span class="opt">(선택)</span></label>
+        <select id="p2"><option value="">선택하세요</option></select>
+      </div>
+      <p class="pri">친구 번호를 모르면 반 번호표를 확인하세요.</p>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">🤍 같은 방이 어려운 친구</h2>
+      <p class="secret">🔒 이 답변은 <b>선생님만</b> 볼 수 있어요. 친구들에게 공개되지 않으니 편하게 적어도 돼요. 없으면 비워 두세요.</p>
+      <div class="field" style="margin-bottom:0">
+        <label for="avoid">1명만 <span class="opt">(선택)</span></label>
+        <select id="avoid"><option value="">없음</option></select>
+      </div>
+    </section>
+
+    <p class="save-status" id="status"></p>
+
+    <div class="action-bar">
+      <button class="btn btn-block btn-submit" id="submitBtn">✅ 제출하기</button>
+    </div>
+
+    <p class="pri" style="text-align:center">여러 번 제출하면 <b>마지막에 낸 답</b>이 저장돼요.</p>
+
+    <footer class="foot"><span>육민관중학교 2학년 3반 💗</span></footer>
+  </main>
+
+  <script>
+    const ENDPOINT = 'https://script.google.com/macros/s/AKfycby9POET85dvQoraZRfvx4XvAdWX-ZN3xWkVIQPCyQeDp3TwRyvURm1aqhEYfcqv48IG/exec';
+    const KEY = 'room-survey-me';
+    const MAX_NUM = 28;
+    const $ = (id) => document.getElementById(id);
+
+    // 번호 채우기
+    const fill = (sel, firstLabel) => {
+      for (let i = 1; i <= MAX_NUM; i++) {
+        const o = document.createElement('option');
+        o.value = i; o.textContent = i + '번';
+        sel.appendChild(o);
+      }
+    };
+    ['num', 'p1', 'p2', 'avoid'].forEach((id) => fill($(id)));
+
+    // 내 번호는 선택지에서 제외
+    function refreshOptions() {
+      const me = $('num').value;
+      ['p1', 'p2', 'avoid'].forEach((id) => {
+        [...$(id).options].forEach((o) => {
+          o.hidden = (o.value !== '' && o.value === me);
+        });
+        if (me && $(id).value === me) $(id).value = '';
+      });
+    }
+    $('num').addEventListener('change', () => { refreshOptions(); remember(); });
+
+    // 기억하기
+    try {
+      const s = JSON.parse(localStorage.getItem(KEY)) || {};
+      if (s.num) $('num').value = s.num;
+      if (s.name) $('name').value = s.name;
+      if (s.gender) { const r = document.querySelector(`input[name=gender][value="${s.gender}"]`); if (r) r.checked = true; }
+      refreshOptions();
+    } catch {}
+    function remember() {
+      const g = document.querySelector('input[name=gender]:checked');
+      localStorage.setItem(KEY, JSON.stringify({
+        num: $('num').value, name: $('name').value, gender: g ? g.value : '',
+      }));
+    }
+    $('name').addEventListener('input', remember);
+    document.querySelectorAll('input[name=gender]').forEach((r) => r.addEventListener('change', remember));
+
+    const btn = $('submitBtn');
+    btn.addEventListener('click', async () => {
+      const num = $('num').value;
+      const name = $('name').value.trim();
+      const g = document.querySelector('input[name=gender]:checked');
+      if (!num) { alert('내 번호를 선택해 주세요.'); return; }
+      if (!name) { alert('이름을 입력해 주세요.'); return; }
+      if (!g) { alert('성별을 선택해 주세요.'); return; }
+
+      const p1 = $('p1').value, p2 = $('p2').value, avoid = $('avoid').value;
+      if (p1 && p2 && p1 === p2) { alert('1순위와 2순위는 다른 친구를 골라 주세요.'); return; }
+      if (!p1) { if (!confirm('1순위를 고르지 않았어요. 그냥 제출할까요?')) return; }
+
+      const payload = { type: 'room', num, name, gender: g.value, p1, p2, avoid };
+      const orig = btn.textContent;
+      btn.disabled = true; btn.textContent = '제출 중…';
+      $('status').textContent = '';
+      try {
+        await fetch(ENDPOINT, {
+          method: 'POST', mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload),
+        });
+        $('status').textContent = '✓ 제출 완료! 고마워요 💗';
+        btn.textContent = '제출 완료 ✓';
+      } catch (e) {
+        $('status').textContent = '⚠ 전송에 실패했어요. 인터넷 확인 후 다시 눌러 주세요.';
+        btn.textContent = orig;
+      } finally {
+        btn.disabled = false;
+        setTimeout(() => { btn.textContent = orig; }, 4000);
+      }
+    });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>

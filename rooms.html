@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#4f46e5" />
+  <title>수학여행 방배정 — 2학년 3반 관리 콘솔</title>
+  <meta name="description" content="희망 조사 결과로 수학여행 방을 자동 배정합니다" />
+  <link rel="stylesheet" href="admin.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9B%8C%3C/text%3E%3C/svg%3E" />
+  <style>
+    .cfg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+    .cfg-grid .field { margin-bottom: 0; }
+    .num-row { display: flex; align-items: center; gap: 8px; }
+    .num-row input[type="number"] { width: 78px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 9px; font: inherit; }
+    .num-row .hint { font-size: .82rem; color: var(--muted); }
+    textarea.mini { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font: inherit; resize: vertical; }
+    input.mini { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px; font: inherit; }
+
+    .gsec { margin-bottom: 26px; }
+    .gsec-head { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; }
+    .gsec-head h3 { margin: 0; font-size: 1.05rem; }
+    .gsec-head .tally { font-size: .85rem; color: var(--muted); font-weight: 600; }
+    .g-m .gsec-head h3 { color: #1d4ed8; }
+    .g-f .gsec-head h3 { color: #be185d; }
+
+    .room-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+    .room {
+      border: 1.5px solid var(--border); border-radius: 12px; padding: 12px; background: #fff;
+    }
+    .g-m .room { border-color: #dbeafe; background: #f8fbff; }
+    .g-f .room { border-color: #fce7f3; background: #fff8fb; }
+    .room-name { font-weight: 800; font-size: .92rem; margin-bottom: 9px; display: flex; justify-content: space-between; }
+    .room-name span { color: var(--muted); font-weight: 600; font-size: .82rem; }
+    .stu {
+      display: flex; align-items: center; gap: 6px; padding: 7px 9px; border-radius: 9px;
+      background: #fff; border: 1px solid var(--border); margin-bottom: 6px; cursor: pointer;
+      font-size: .9rem; transition: transform .1s ease, box-shadow .1s ease;
+    }
+    .stu:last-child { margin-bottom: 0; }
+    .stu:hover { box-shadow: 0 2px 6px rgba(15,23,42,.12); }
+    .stu.sel { border-color: var(--accent); background: var(--accent-soft); transform: scale(1.02); }
+    .stu .sn { color: var(--muted); font-size: .8rem; font-weight: 700; min-width: 24px; }
+    .stu .nm { font-weight: 700; flex: 1; }
+    .stu .mk { font-size: .72rem; font-weight: 800; padding: 1px 6px; border-radius: 99px; }
+    .mk1 { background: #dcfce7; color: #15803d; }
+    .mk2 { background: #e0e7ff; color: #4338ca; }
+    .mk0 { background: #f1f5f9; color: #94a3b8; }
+    .mkx { background: #ffe4e6; color: #be123c; }
+
+    .swap-tip { font-size: .85rem; color: var(--muted); margin: 0 0 14px; }
+    .swap-tip b { color: var(--accent); }
+
+    .warn { background: var(--warn-bg); color: var(--warn-text); border: 1px solid #fde68a;
+      border-radius: 10px; padding: 10px 12px; font-size: .86rem; margin-bottom: 10px; }
+    .warn ul { margin: 6px 0 0; padding-left: 18px; }
+    .okbox { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;
+      border-radius: 10px; padding: 10px 12px; font-size: .86rem; margin-bottom: 10px; }
+    .toolbar2 { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .status-line { color: var(--muted); font-size: .9rem; padding: 10px 0; }
+    @media print {
+      .nav, .toolbar2, .no-print { display: none !important; }
+      body { background: #fff; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="admin.html">2학년 3반 <span>관리 콘솔</span></a>
+      <nav class="nav-links">
+        <a href="admin.html">대시보드</a>
+        <a href="counsel.html">학생·상담</a>
+        <a href="grades.html">성적</a>
+        <a href="manage.html">학급 도구</a>
+        <a href="rooms.html" class="active">방배정</a>
+        <a href="content.html">콘텐츠</a>
+        <a href="index.html" class="nav-student">학생용 페이지 ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="page-head">
+      <h1>🛌 수학여행 방배정</h1>
+      <p>희망 조사 결과를 불러와 남녀 구분 · 방 인원에 맞춰 자동으로 배정합니다.</p>
+    </div>
+
+    <!-- 설정 -->
+    <section class="card no-print">
+      <h2 class="card-title">⚙️ 배정 조건</h2>
+      <div class="cfg-grid">
+        <div class="field">
+          <label for="mSize">남학생 · 한 방 인원</label>
+          <div class="num-row">
+            <input type="number" id="mSize" min="2" max="12" value="4" />
+            <span class="hint" id="mHint">—</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="fSize">여학생 · 한 방 인원</label>
+          <div class="num-row">
+            <input type="number" id="fSize" min="2" max="12" value="4" />
+            <span class="hint" id="fHint">—</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="exclude">제외할 번호 <span class="opt">(미참가)</span></label>
+          <input type="text" class="mini" id="exclude" placeholder="예: 7, 15" />
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:16px">
+        <label for="extra">응답하지 않은 학생 추가 <span class="opt">(한 줄에 한 명: 번호, 이름, 성별)</span></label>
+        <textarea class="mini" id="extra" rows="3" placeholder="예: 12, 김하늘, 남&#10;20, 이서연, 여"></textarea>
+      </div>
+
+      <div class="toolbar2" style="margin:16px 0 0">
+        <button class="btn" id="loadBtn">📥 설문 결과 불러오기</button>
+        <button class="btn" id="runBtn">🎯 방 배정하기</button>
+        <button class="btn btn-ghost" id="rerunBtn">🔀 다시 배정</button>
+      </div>
+      <p class="status-line" id="loadStatus">먼저 설문 결과를 불러오세요.</p>
+    </section>
+
+    <!-- 응답 현황 -->
+    <section class="card no-print" id="dataCard" hidden>
+      <h2 class="card-title">📋 응답 현황</h2>
+      <div id="dataInfo"></div>
+    </section>
+
+    <!-- 결과 -->
+    <section class="card" id="resultCard" hidden>
+      <h2 class="card-title">🏠 배정 결과</h2>
+      <div class="stat-row" id="statRow"></div>
+      <p class="swap-tip no-print">학생을 <b>두 명 클릭</b>하면 자리를 서로 바꿀 수 있어요. 배지: <span class="mk mk1">1순위</span> <span class="mk mk2">2순위</span> <span class="mk mk0">미반영</span> <span class="mk mkx">기피충돌</span></p>
+      <div id="rooms"></div>
+      <div class="toolbar2 no-print" style="margin-top:18px">
+        <button class="btn btn-ghost" id="copyBtn">📋 표 복사</button>
+        <button class="btn btn-ghost" id="pngBtn">🖼️ 이미지 저장</button>
+        <button class="btn btn-ghost" id="printBtn">🖨️ 인쇄</button>
+      </div>
+      <p class="save-status" id="expStatus"></p>
+    </section>
+  </main>
+
+  <script>
+    // ── 교사용 잠금 ──
+    if (sessionStorage.getItem('teacherAuth') !== 'ok') {
+      const pw = prompt('🔒 교사용 비밀번호를 입력하세요');
+      if (pw === '3275') { try { sessionStorage.setItem('teacherAuth', 'ok'); } catch {} }
+      else {
+        document.body.innerHTML = '<div style="max-width:520px;margin:60px auto;padding:24px;text-align:center;font-family:sans-serif"><h2>🔒 접근 권한이 없습니다</h2><p>교사용 페이지입니다.</p><p><a href="index.html">홈으로 돌아가기</a></p></div>';
+        throw new Error('unauthorized');
+      }
+    }
+
+    const ENDPOINT = 'https://script.google.com/macros/s/AKfycby9POET85dvQoraZRfvx4XvAdWX-ZN3xWkVIQPCyQeDp3TwRyvURm1aqhEYfcqv48IG/exec';
+    const $ = (id) => document.getElementById(id);
+    const CFG_KEY = 'rooms-cfg';
+
+    // 가중치
+    const W_P1 = 6, W_P2 = 2, W_AVOID = -100, LONELY = -4;
+
+    let responses = [];   // 설문 원본(중복 제거 후)
+    let plan = null;      // { 남: {students, rooms:[[i,..]]}, 여: {...} }
+    let sel = null;       // 교환용 선택 상태
+
+    // ── 설정 저장/복원 ──
+    try {
+      const c = JSON.parse(localStorage.getItem(CFG_KEY)) || {};
+      if (c.mSize) $('mSize').value = c.mSize;
+      if (c.fSize) $('fSize').value = c.fSize;
+      if (c.exclude) $('exclude').value = c.exclude;
+      if (c.extra) $('extra').value = c.extra;
+    } catch {}
+    function saveCfg() {
+      localStorage.setItem(CFG_KEY, JSON.stringify({
+        mSize: $('mSize').value, fSize: $('fSize').value,
+        exclude: $('exclude').value, extra: $('extra').value,
+      }));
+    }
+    ['mSize', 'fSize', 'exclude', 'extra'].forEach((id) => {
+      $(id).addEventListener('input', () => { saveCfg(); updateHints(); });
+    });
+
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    // ── 설문 불러오기 ──
+    let jsonpTimer = null;
+    function loadSurvey() {
+      $('loadStatus').textContent = '불러오는 중…';
+      const old = $('jsonp'); if (old) old.remove();
+      jsonpTimer = setTimeout(() => { $('loadStatus').textContent = '⚠ 응답이 없어요. 새로고침 후 다시 시도해 주세요.'; }, 15000);
+      const s = document.createElement('script');
+      s.id = 'jsonp';
+      s.src = ENDPOINT + '?action=roomSurvey&callback=onRoomSurvey&_=' + String(performance.now()).replace('.', '');
+      s.onerror = () => { clearTimeout(jsonpTimer); $('loadStatus').textContent = '⚠ 서버에 연결하지 못했어요.'; };
+      document.body.appendChild(s);
+    }
+
+    window.onRoomSurvey = (data) => {
+      clearTimeout(jsonpTimer);
+      if (!data || !data.ok) {
+        $('loadStatus').textContent = '⚠ 불러오지 못했어요' + (data && data.message ? ' (' + data.message + ')' : '') + '. Apps Script를 최신 코드로 다시 배포했는지 확인해 주세요.';
+        return;
+      }
+      // 번호별 최신 응답만 남기기 (뒤에 온 것이 최신)
+      const byNum = new Map();
+      (data.rows || []).forEach((r) => {
+        const n = Number(r.num);
+        if (!n) return;
+        byNum.set(n, {
+          num: n, name: String(r.name || '').trim(), gender: String(r.gender || '').trim(),
+          p1: Number(r.p1) || 0, p2: Number(r.p2) || 0, avoid: Number(r.avoid) || 0,
+        });
+      });
+      responses = [...byNum.values()].sort((a, b) => a.num - b.num);
+      $('loadStatus').textContent = `✓ ${responses.length}명의 응답을 불러왔어요.`;
+      renderData();
+      updateHints();
+    };
+
+    // ── 명단 구성 ──
+    function parseExtra() {
+      return $('extra').value.split(/\n+/).map((line) => {
+        const t = line.split(/[,\t]/).map((x) => x.trim());
+        const num = Number(t[0]);
+        if (!num) return null;
+        return { num, name: t[1] || (num + '번'), gender: (t[2] || '').replace(/자|학생/g, '').trim(), p1: 0, p2: 0, avoid: 0, noReply: true };
+      }).filter(Boolean);
+    }
+    function excludeSet() {
+      return new Set($('exclude').value.split(/[,\s]+/).map(Number).filter(Boolean));
+    }
+    function buildRoster() {
+      const ex = excludeSet();
+      const map = new Map();
+      responses.forEach((r) => map.set(r.num, { ...r }));
+      parseExtra().forEach((r) => { if (!map.has(r.num)) map.set(r.num, r); });
+      return [...map.values()].filter((s) => !ex.has(s.num)).sort((a, b) => a.num - b.num);
+    }
+    const splitGender = (roster) => ({
+      남: roster.filter((s) => s.gender === '남'),
+      여: roster.filter((s) => s.gender === '여'),
+      미상: roster.filter((s) => s.gender !== '남' && s.gender !== '여'),
+    });
+
+    function roomSizes(n, cap) {
+      if (n <= 0) return [];
+      const cnt = Math.max(1, Math.ceil(n / cap));
+      const base = Math.floor(n / cnt), rem = n % cnt;
+      return Array.from({ length: cnt }, (_, i) => base + (i < rem ? 1 : 0));
+    }
+
+    function updateHints() {
+      if (!responses.length) return;
+      const g = splitGender(buildRoster());
+      const line = (arr, cap) => {
+        if (!arr.length) return '해당 없음';
+        const sz = roomSizes(arr.length, cap);
+        return `${arr.length}명 → ${sz.length}개 방 (${sz.join('·')}명)`;
+      };
+      $('mHint').textContent = line(g.남, Number($('mSize').value) || 4);
+      $('fHint').textContent = line(g.여, Number($('fSize').value) || 4);
+    }
+
+    // ── 응답 현황 ──
+    function renderData() {
+      const roster = buildRoster();
+      const g = splitGender(roster);
+      const nameOf = new Map(roster.map((s) => [s.num, s.name]));
+      const inRoster = new Set(roster.map((s) => s.num));
+
+      const crossG = [], badRef = [];
+      roster.forEach((s) => {
+        [['1순위', s.p1], ['2순위', s.p2], ['기피', s.avoid]].forEach(([label, t]) => {
+          if (!t) return;
+          if (!inRoster.has(t)) { badRef.push(`${s.num}번 ${s.name}의 ${label}(${t}번)은 명단에 없어요`); return; }
+          const tg = roster.find((x) => x.num === t);
+          if (tg && s.gender && tg.gender && tg.gender !== s.gender) crossG.push(`${s.num}번 ${s.name}의 ${label}(${t}번 ${tg.name})은 성별이 달라 반영되지 않아요`);
+        });
+      });
+
+      let html = `<div class="stat-row" style="margin-bottom:14px">
+        <div class="stat"><div class="stat-num">${roster.length}</div><div class="stat-label">전체 명단</div></div>
+        <div class="stat"><div class="stat-num">${g.남.length}</div><div class="stat-label">남학생</div></div>
+        <div class="stat"><div class="stat-num">${g.여.length}</div><div class="stat-label">여학생</div></div>
+        <div class="stat"><div class="stat-num">${roster.filter((s) => s.noReply).length}</div><div class="stat-label">미응답</div></div>
+      </div>`;
+
+      const probs = [];
+      if (g.미상.length) probs.push(`성별이 없는 학생 ${g.미상.length}명: ${g.미상.map((s) => s.num + '번 ' + s.name).join(', ')} — 아래 칸에 <b>번호, 이름, 성별</b>로 추가해 주세요.`);
+      badRef.forEach((t) => probs.push(t));
+      crossG.forEach((t) => probs.push(t));
+      if (probs.length) html += `<div class="warn"><b>확인이 필요해요</b><ul>${probs.map((p) => '<li>' + p + '</li>').join('')}</ul></div>`;
+      else html += `<div class="okbox">✓ 명단에 문제가 없어요. 바로 배정할 수 있습니다.</div>`;
+
+      $('dataInfo').innerHTML = html;
+      $('dataCard').hidden = false;
+    }
+
+    // ── 배정 알고리즘 ──
+    function buildW(list) {
+      const idx = new Map(list.map((s, i) => [s.num, i]));
+      const n = list.length;
+      const W = Array.from({ length: n }, () => new Array(n).fill(0));
+      list.forEach((s, i) => {
+        const add = (t, w) => {
+          if (!t) return;
+          const j = idx.get(t);
+          if (j === undefined || j === i) return;
+          W[i][j] += w; W[j][i] += w;
+        };
+        add(s.p1, W_P1); add(s.p2, W_P2); add(s.avoid, W_AVOID);
+      });
+      return W;
+    }
+
+    function totalScore(rooms, W, list) {
+      let sum = 0;
+      const idx = new Map(list.map((s, i) => [s.num, i]));
+      rooms.forEach((room) => {
+        for (let a = 0; a < room.length; a++)
+          for (let b = a + 1; b < room.length; b++) sum += W[room[a]][room[b]];
+        // 희망이 하나도 반영되지 않은 학생 패널티(공평성)
+        room.forEach((i) => {
+          const s = list[i];
+          if (!s.p1 && !s.p2) return;
+          const has = room.some((j) => j !== i && (list[j].num === s.p1 || list[j].num === s.p2));
+          if (!has) sum += LONELY;
+        });
+      });
+      return sum;
+    }
+
+    function greedy(list, sizes, W) {
+      const order = list.map((_, i) => i);
+      for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+      const rooms = sizes.map(() => []);
+      order.forEach((i) => {
+        let bestR = -1, bestGain = -Infinity;
+        rooms.forEach((room, r) => {
+          if (room.length >= sizes[r]) return;
+          let gain = 0;
+          room.forEach((x) => { gain += W[i][x]; });
+          gain += Math.random() * 0.01; // 동점 무작위
+          if (gain > bestGain) { bestGain = gain; bestR = r; }
+        });
+        rooms[bestR].push(i);
+      });
+      return rooms;
+    }
+
+    function localSearch(rooms, W) {
+      let improved = true, guard = 0;
+      while (improved && guard++ < 200) {
+        improved = false;
+        for (let A = 0; A < rooms.length; A++) {
+          for (let B = A + 1; B < rooms.length; B++) {
+            for (let ai = 0; ai < rooms[A].length; ai++) {
+              for (let bi = 0; bi < rooms[B].length; bi++) {
+                const a = rooms[A][ai], b = rooms[B][bi];
+                let d = 0;
+                rooms[A].forEach((x) => { if (x !== a) d += W[b][x] - W[a][x]; });
+                rooms[B].forEach((y) => { if (y !== b) d += W[a][y] - W[b][y]; });
+                if (d > 1e-9) { rooms[A][ai] = b; rooms[B][bi] = a; improved = true; }
+              }
+            }
+          }
+        }
+      }
+      return rooms;
+    }
+
+    function assign(list, cap) {
+      if (!list.length) return [];
+      const sizes = roomSizes(list.length, cap);
+      const W = buildW(list);
+      let best = null, bestScore = -Infinity;
+      for (let t = 0; t < 400; t++) {
+        const rooms = localSearch(greedy(list, sizes, W), W);
+        const sc = totalScore(rooms, W, list);
+        if (sc > bestScore) { bestScore = sc; best = rooms.map((r) => r.slice()); }
+      }
+      return best;
+    }
+
+    function runAssign() {
+      if (!responses.length) { alert('먼저 설문 결과를 불러와 주세요.'); return; }
+      const roster = buildRoster();
+      const g = splitGender(roster);
+      if (g.미상.length) {
+        if (!confirm(`성별이 입력되지 않은 학생이 ${g.미상.length}명 있어요. 그 학생을 빼고 배정할까요?`)) return;
+      }
+      plan = {};
+      [['남', Number($('mSize').value) || 4], ['여', Number($('fSize').value) || 4]].forEach(([k, cap]) => {
+        const list = g[k];
+        plan[k] = { list, rooms: assign(list, cap) };
+      });
+      sel = null;
+      renderRooms();
+      $('resultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ── 결과 렌더링 ──
+    function markOf(list, room, i) {
+      const s = list[i];
+      const mates = room.filter((j) => j !== i).map((j) => list[j].num);
+      if (s.avoid && mates.includes(s.avoid)) return ['mkx', '기피충돌'];
+      if (s.p1 && mates.includes(s.p1)) return ['mk1', '1순위'];
+      if (s.p2 && mates.includes(s.p2)) return ['mk2', '2순위'];
+      if (!s.p1 && !s.p2) return ['mk0', '무응답'];
+      return ['mk0', '미반영'];
+    }
+
+    function stats() {
+      let p1 = 0, p2 = 0, none = 0, clash = 0, wish = 0, total = 0;
+      const noneList = [];
+      ['남', '여'].forEach((k) => {
+        const g = plan[k]; if (!g) return;
+        g.rooms.forEach((room) => room.forEach((i) => {
+          const s = g.list[i]; total++;
+          const mates = room.filter((j) => j !== i).map((j) => g.list[j].num);
+          if (s.avoid && mates.includes(s.avoid)) clash++;
+          if (!s.p1 && !s.p2) return;
+          wish++;
+          if (s.p1 && mates.includes(s.p1)) p1++;
+          else if (s.p2 && mates.includes(s.p2)) p2++;
+          else { none++; noneList.push(s.num + '번 ' + s.name); }
+        }));
+      });
+      return { p1, p2, none, clash, wish, total, noneList };
+    }
+
+    function renderRooms() {
+      const st = stats();
+      $('statRow').innerHTML = `
+        <div class="stat"><div class="stat-num" style="color:#059669">${st.p1}</div><div class="stat-label">1순위 충족</div></div>
+        <div class="stat"><div class="stat-num" style="color:#4338ca">${st.p2}</div><div class="stat-label">2순위 충족</div></div>
+        <div class="stat"><div class="stat-num" style="color:#94a3b8">${st.none}</div><div class="stat-label">희망 미반영</div></div>
+        <div class="stat"><div class="stat-num" style="color:${st.clash ? '#e11d48' : '#059669'}">${st.clash}</div><div class="stat-label">기피 충돌</div></div>`;
+
+      let html = '';
+      if (st.wish) {
+        const pct = Math.round(((st.p1 + st.p2) / st.wish) * 100);
+        html += `<div class="okbox no-print">희망을 낸 ${st.wish}명 중 <b>${st.p1 + st.p2}명(${pct}%)</b>이 1·2순위 친구와 같은 방이 됐어요.` +
+          (st.noneList.length ? ` 미반영: ${esc(st.noneList.join(', '))}` : '') + `</div>`;
+      }
+      if (st.clash) html += `<div class="warn no-print">⚠ 기피 충돌이 ${st.clash}건 있어요. 인원 구성상 불가피한 경우이니 아래에서 직접 교환해 주세요.</div>`;
+
+      ['남', '여'].forEach((k) => {
+        const g = plan[k];
+        if (!g || !g.list.length) return;
+        const cls = k === '남' ? 'g-m' : 'g-f';
+        html += `<div class="gsec ${cls}"><div class="gsec-head"><h3>${k === '남' ? '👦 남학생' : '👧 여학생'}</h3>
+          <span class="tally">${g.list.length}명 · ${g.rooms.length}개 방</span></div><div class="room-grid">`;
+        g.rooms.forEach((room, ri) => {
+          html += `<div class="room"><div class="room-name">${k} ${ri + 1}호실 <span>${room.length}명</span></div>`;
+          room.forEach((i) => {
+            const s = g.list[i];
+            const [mc, ml] = markOf(g.list, room, i);
+            html += `<div class="stu" data-g="${k}" data-r="${ri}" data-i="${i}">
+              <span class="sn">${s.num}</span><span class="nm">${esc(s.name)}</span><span class="mk ${mc}">${ml}</span></div>`;
+          });
+          html += `</div>`;
+        });
+        html += `</div></div>`;
+      });
+
+      $('rooms').innerHTML = html;
+      $('resultCard').hidden = false;
+      document.querySelectorAll('.stu').forEach((el) => el.addEventListener('click', onPick));
+    }
+
+    // ── 클릭 두 번으로 교환 ──
+    function onPick(e) {
+      const el = e.currentTarget;
+      const g = el.dataset.g, r = Number(el.dataset.r), i = Number(el.dataset.i);
+      if (!sel) { sel = { g, r, i, el }; el.classList.add('sel'); return; }
+      if (sel.el === el) { el.classList.remove('sel'); sel = null; return; }
+      if (sel.g !== g) { alert('남학생과 여학생은 서로 바꿀 수 없어요.'); sel.el.classList.remove('sel'); sel = null; return; }
+      const rooms = plan[g].rooms;
+      const ai = rooms[sel.r].indexOf(sel.i), bi = rooms[r].indexOf(i);
+      rooms[sel.r][ai] = i; rooms[r][bi] = sel.i;
+      sel = null;
+      renderRooms();
+    }
+
+    // ── 내보내기 ──
+    function asRows() {
+      const out = [['성별', '방', '번호', '이름', '반영']];
+      ['남', '여'].forEach((k) => {
+        const g = plan[k]; if (!g) return;
+        g.rooms.forEach((room, ri) => room.forEach((i) => {
+          const s = g.list[i];
+          out.push([k, `${k} ${ri + 1}호실`, s.num, s.name, markOf(g.list, room, i)[1]]);
+        }));
+      });
+      return out;
+    }
+
+    $('copyBtn').addEventListener('click', async () => {
+      const tsv = asRows().map((r) => r.join('\t')).join('\n');
+      try {
+        await navigator.clipboard.writeText(tsv);
+        $('expStatus').textContent = '✓ 복사했어요. 한글·엑셀에 붙여넣기(Ctrl+V) 하세요.';
+      } catch {
+        $('expStatus').textContent = '⚠ 복사에 실패했어요. 이미지 저장을 이용해 주세요.';
+      }
+      setTimeout(() => { $('expStatus').textContent = ''; }, 5000);
+    });
+
+    $('printBtn').addEventListener('click', () => window.print());
+
+    $('pngBtn').addEventListener('click', () => {
+      const groups = ['남', '여'].filter((k) => plan[k] && plan[k].list.length);
+      const cols = 4, pad = 24, boxW = 240, lineH = 30, gap = 16;
+      let y = 84;
+      const layout = [];
+      groups.forEach((k) => {
+        y += 40;
+        const rooms = plan[k].rooms;
+        for (let r = 0; r < rooms.length; r += cols) {
+          const slice = rooms.slice(r, r + cols);
+          const h = 46 + Math.max(...slice.map((x) => x.length)) * lineH;
+          slice.forEach((room, c) => layout.push({ k, ri: r + c, room, x: pad + c * (boxW + gap), y }));
+          y += h + gap;
+        }
+      });
+      const W = pad * 2 + cols * boxW + (cols - 1) * gap;
+      const H = y + pad;
+      const cv = document.createElement('canvas');
+      const dpr = 2;
+      cv.width = W * dpr; cv.height = H * dpr;
+      const x = cv.getContext('2d');
+      x.scale(dpr, dpr);
+      x.fillStyle = '#fff'; x.fillRect(0, 0, W, H);
+      x.fillStyle = '#0f172a'; x.font = 'bold 26px sans-serif';
+      x.fillText('2학년 3반 수학여행 방배정', pad, 44);
+      const st = stats();
+      x.fillStyle = '#64748b'; x.font = '15px sans-serif';
+      x.fillText(`총 ${st.total}명 · 1순위 ${st.p1}명 · 2순위 ${st.p2}명 · 기피충돌 ${st.clash}건`, pad, 68);
+
+      let curG = '';
+      layout.forEach((b) => {
+        if (b.k !== curG) {
+          curG = b.k;
+          x.fillStyle = b.k === '남' ? '#1d4ed8' : '#be185d';
+          x.font = 'bold 18px sans-serif';
+          x.fillText(b.k === '남' ? '남학생' : '여학생', pad, b.y - 12);
+        }
+        const h = 46 + b.room.length * lineH;
+        x.fillStyle = b.k === '남' ? '#f8fbff' : '#fff8fb';
+        x.strokeStyle = b.k === '남' ? '#dbeafe' : '#fce7f3';
+        x.lineWidth = 1.5;
+        x.beginPath(); x.roundRect(b.x, b.y, boxW, h, 12); x.fill(); x.stroke();
+        x.fillStyle = '#0f172a'; x.font = 'bold 16px sans-serif';
+        x.fillText(`${b.k} ${b.ri + 1}호실`, b.x + 14, b.y + 28);
+        x.font = '15px sans-serif';
+        b.room.forEach((i, n) => {
+          const s = plan[b.k].list[i];
+          x.fillStyle = '#64748b';
+          x.fillText(String(s.num), b.x + 14, b.y + 52 + n * lineH);
+          x.fillStyle = '#0f172a';
+          x.fillText(s.name, b.x + 46, b.y + 52 + n * lineH);
+        });
+      });
+
+      const a = document.createElement('a');
+      a.href = cv.toDataURL('image/png');
+      a.download = '2-3_수학여행_방배정.png';
+      a.click();
+      $('expStatus').textContent = '✓ 이미지를 저장했어요.';
+      setTimeout(() => { $('expStatus').textContent = ''; }, 5000);
+    });
+
+    $('loadBtn').addEventListener('click', loadSurvey);
+    $('runBtn').addEventListener('click', runAssign);
+    $('rerunBtn').addEventListener('click', () => { if (plan) runAssign(); else alert('먼저 배정을 실행해 주세요.'); });
+    loadSurvey();
+  </script>
+</body>
+</html>
