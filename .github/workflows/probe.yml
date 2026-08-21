@@ -4,15 +4,12 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Extract error
+      - name: Raw bodies
         run: |
           EP="https://script.google.com/macros/s/AKfycbxh4kD1tkNfcz3NiCVJ45JXpYWEdZKCu6kHYGEJqtwNFmwdRsd3MxpuJJekqULyQ54/exec"
-          for A in content roomSurvey board; do
+          for A in content roomSurvey board studyStats; do
             echo "########## $A ##########"
-            curl -sL --max-time 90 "$EP?action=$A" -o /tmp/r.html -w "HTTP=%{http_code} time=%{time_total}s\n"
-            echo "--- title ---"
-            grep -o '<title>[^<]*</title>' /tmp/r.html | head -2
-            echo "--- text ---"
-            sed -e 's/<script[^>]*>/\n/g' -e 's/<[^>]*>/ /g' /tmp/r.html | tr -s ' \n' ' \n' | grep -viE '^\s*$' | grep -iE 'error|오류|권한|승인|authoriz|denied|exception|찾을|없습니다|TypeError|ReferenceError' | head -8
+            curl -sL --max-time 90 "$EP?action=$A" | head -c 500
+            echo ""
             echo ""
           done
