@@ -1,0 +1,14 @@
+name: probe
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe new deployment
+        run: |
+          EP="https://script.google.com/macros/s/AKfycbxh4kD1tkNfcz3NiCVJ45JXpYWEdZKCu6kHYGEJqtwNFmwdRsd3MxpuJJekqULyQ54/exec"
+          for A in content roomSurvey board studyStats; do
+            echo "===== $A ====="
+            curl -sL "$EP?action=$A" | head -c 500
+            echo ""
+          done

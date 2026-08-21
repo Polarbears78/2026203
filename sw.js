@@ -1,7 +1,7 @@
 /* 서비스 워커
  * - HTML 문서와 data.json: 네트워크 우선(항상 최신), 오프라인 시 캐시로 폴백
  * - 그 외 정적 파일(css/js/이미지): 캐시 우선 */
-const CACHE = 'jayubok-v39';
+const CACHE = 'jayubok-v40';
 const ASSETS = [
   './',
   './index.html',
@@ -85,7 +85,7 @@ self.addEventListener('fetch', (e) => {
 /* ── 새 소식 알림 ──
  * 공지·주간안내·게시판 갱신을 주기적으로 확인해 알림 표시.
  * periodicsync는 안드로이드 크롬에서 앱(PWA) 설치 시 동작. */
-const NOTIFY_ENDPOINT = 'https://script.google.com/macros/s/AKfycby9POET85dvQoraZRfvx4XvAdWX-ZN3xWkVIQPCyQeDp3TwRyvURm1aqhEYfcqv48IG/exec';
+const NOTIFY_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxh4kD1tkNfcz3NiCVJ45JXpYWEdZKCu6kHYGEJqtwNFmwdRsd3MxpuJJekqULyQ54/exec';
 
 async function checkUpdates(silentFirstRun) {
   let content = null, board = null;
