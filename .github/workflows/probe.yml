@@ -1,0 +1,17 @@
+name: probe
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe content endpoint
+        run: |
+          EP="https://script.google.com/macros/s/AKfycby9POET85dvQoraZRfvx4XvAdWX-ZN3xWkVIQPCyQeDp3TwRyvURm1aqhEYfcqv48IG/exec"
+          echo "===== GET action=content ====="
+          curl -sL "$EP?action=content" | head -c 3000
+          echo ""
+          echo "===== GET action=roomSurvey ====="
+          curl -sL "$EP?action=roomSurvey" | head -c 600
+          echo ""
+          echo "===== GET (no action) ====="
+          curl -sL "$EP" | head -c 300
