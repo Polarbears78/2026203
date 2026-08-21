@@ -14,6 +14,14 @@
     .num-row { display: flex; align-items: center; gap: 8px; }
     .num-row input[type="number"] { width: 78px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 9px; font: inherit; }
     .num-row .hint { font-size: .82rem; color: var(--muted); }
+    .hint-line { font-size: .8rem; color: var(--muted); margin: 6px 0 0; line-height: 1.45; }
+    .hint-line.bad { color: var(--danger); font-weight: 600; }
+    .hint-line.good { color: var(--ok); }
+    .spec-help { margin-top: 14px; font-size: .85rem; }
+    .spec-help summary { cursor: pointer; font-weight: 600; color: var(--muted); }
+    .spec-help ul { margin: 10px 0 0; padding-left: 20px; color: var(--muted); }
+    .spec-help li { margin-bottom: 5px; }
+    .spec-help code, .spec-help b { color: var(--text); }
     textarea.mini { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font: inherit; resize: vertical; }
     input.mini { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px; font: inherit; }
 
@@ -91,24 +99,31 @@
       <h2 class="card-title">⚙️ 배정 조건</h2>
       <div class="cfg-grid">
         <div class="field">
-          <label for="mSize">남학생 · 한 방 인원</label>
-          <div class="num-row">
-            <input type="number" id="mSize" min="2" max="12" value="4" />
-            <span class="hint" id="mHint">—</span>
-          </div>
+          <label for="mSpec">👦 남학생 방 구성</label>
+          <input type="text" class="mini" id="mSpec" value="4" placeholder="예: 4,4,3,3" />
+          <p class="hint hint-line" id="mHint">—</p>
         </div>
         <div class="field">
-          <label for="fSize">여학생 · 한 방 인원</label>
-          <div class="num-row">
-            <input type="number" id="fSize" min="2" max="12" value="4" />
-            <span class="hint" id="fHint">—</span>
-          </div>
+          <label for="fSpec">👧 여학생 방 구성</label>
+          <input type="text" class="mini" id="fSpec" value="4" placeholder="예: 4,4,3,3" />
+          <p class="hint hint-line" id="fHint">—</p>
         </div>
         <div class="field">
           <label for="exclude">제외할 번호 <span class="opt">(미참가)</span></label>
           <input type="text" class="mini" id="exclude" placeholder="예: 7, 15" />
+          <p class="hint hint-line">배정에서 빼고 싶은 학생</p>
         </div>
       </div>
+
+      <details class="spec-help">
+        <summary>방 구성 입력 방법</summary>
+        <ul>
+          <li><b>4</b> — 4명 기준으로 <b>자동</b> 분배 (인원에 맞춰 방 수를 계산)</li>
+          <li><b>4,4,3,3</b> — 방마다 인원을 <b>직접 지정</b> (4명·4명·3명·3명)</li>
+          <li><b>4*3, 3*2</b> — 4인실 3개, 3인실 2개 (<code>4x3</code>, <code>4인실 3개</code>도 가능)</li>
+          <li><b>401:4, 402:4, 403:3</b> — <b>호실 이름</b>까지 지정 (결과표에 401호로 표시)</li>
+        </ul>
+      </details>
 
       <div class="field" style="margin-top:16px">
         <label for="extra">응답하지 않은 학생 추가 <span class="opt">(한 줄에 한 명: 번호, 이름, 성별)</span></label>
@@ -169,18 +184,18 @@
     // ── 설정 저장/복원 ──
     try {
       const c = JSON.parse(localStorage.getItem(CFG_KEY)) || {};
-      if (c.mSize) $('mSize').value = c.mSize;
-      if (c.fSize) $('fSize').value = c.fSize;
+      if (c.mSpec) $('mSpec').value = c.mSpec;
+      if (c.fSpec) $('fSpec').value = c.fSpec;
       if (c.exclude) $('exclude').value = c.exclude;
       if (c.extra) $('extra').value = c.extra;
     } catch {}
     function saveCfg() {
       localStorage.setItem(CFG_KEY, JSON.stringify({
-        mSize: $('mSize').value, fSize: $('fSize').value,
+        mSpec: $('mSpec').value, fSpec: $('fSpec').value,
         exclude: $('exclude').value, extra: $('extra').value,
       }));
     }
-    ['mSize', 'fSize', 'exclude', 'extra'].forEach((id) => {
+    ['mSpec', 'fSpec', 'exclude', 'extra'].forEach((id) => {
       $(id).addEventListener('input', () => { saveCfg(); updateHints(); });
     });
 
@@ -253,16 +268,90 @@
       return Array.from({ length: cnt }, (_, i) => base + (i < rem ? 1 : 0));
     }
 
+    // 방 구성 입력 해석
+    //  "4"                → 4명 기준 자동 분배
+    //  "4,4,3,3"          → 방마다 정원 직접 지정
+    //  "4*3, 3*2"         → 4인실 3개 + 3인실 2개 (4x3 / 4인실 3개 도 인식)
+    //  "401:4, 402:4"     → 호실 이름까지 지정
+    function parseSpec(spec) {
+      const raw = String(spec || '').trim();
+      if (!raw) return { mode: 'auto', cap: 4, rooms: [] };
+      if (/^\d+$/.test(raw)) return { mode: 'auto', cap: Math.max(1, Number(raw)), rooms: [] };
+
+      // "4인실 3개" / "4인 3개" → "4*3"
+      let t = raw.replace(/(\d+)\s*인\s*실?\s*(\d+)\s*개/g, '$1*$2');
+      const rooms = [];
+      t.split(/[,\n·]+/).map((x) => x.trim()).filter(Boolean).forEach((tok) => {
+        // 이름:정원 (401:4)
+        let m = tok.match(/^(.+?)\s*[:：]\s*(\d+)$/);
+        if (m) { rooms.push({ name: m[1].trim(), cap: Number(m[2]) }); return; }
+        // 정원*개수 (4*3, 4x3, 4×3)
+        m = tok.match(/^(\d+)\s*[*x×]\s*(\d+)$/i);
+        if (m) { for (let i = 0; i < Number(m[2]); i++) rooms.push({ name: '', cap: Number(m[1]) }); return; }
+        // 숫자만
+        m = tok.match(/(\d+)/);
+        if (m) rooms.push({ name: '', cap: Number(m[1]) });
+      });
+      const valid = rooms.filter((r) => r.cap > 0);
+      if (!valid.length) return { mode: 'auto', cap: 4, rooms: [] };
+      return { mode: 'list', cap: 0, rooms: valid };
+    }
+
+    // 지정한 정원에 실제 인원을 맞춘다.
+    //  정원 합 == 인원  → 지정한 그대로
+    //  정원 합 >  인원  → 많은 방부터 한 명씩 줄여 고르게 (빈자리 발생)
+    //  정원 합 <  인원  → 부족 (호출한 쪽에서 경고)
+    function fitRooms(spec, n) {
+      if (n <= 0) return [];
+      if (spec.mode === 'auto') {
+        return roomSizes(n, spec.cap).map((sz, i) => ({ name: '', cap: sz, size: sz }));
+      }
+      const out = spec.rooms.map((r) => ({ name: r.name, cap: r.cap, size: r.cap }));
+      let excess = out.reduce((a, r) => a + r.size, 0) - n;
+      while (excess > 0) {
+        let bi = -1;
+        out.forEach((r, i) => { if (r.size > 0 && (bi < 0 || r.size >= out[bi].size)) bi = i; });
+        if (bi < 0) break;
+        out[bi].size--; excess--;
+      }
+      return out.filter((r) => r.size > 0);
+    }
+
+    const specTotal = (spec, n) =>
+      spec.mode === 'auto' ? n : spec.rooms.reduce((a, r) => a + r.cap, 0);
+
+    const roomLabel = (gender, room, idx) => {
+      const nm = (room && room.name) || '';
+      if (!nm) return `${gender} ${idx + 1}호실`;
+      return /^\d+$/.test(nm) ? nm + '호' : nm;
+    };
+
     function updateHints() {
-      if (!responses.length) return;
-      const g = splitGender(buildRoster());
-      const line = (arr, cap) => {
-        if (!arr.length) return '해당 없음';
-        const sz = roomSizes(arr.length, cap);
-        return `${arr.length}명 → ${sz.length}개 방 (${sz.join('·')}명)`;
-      };
-      $('mHint').textContent = line(g.남, Number($('mSize').value) || 4);
-      $('fHint').textContent = line(g.여, Number($('fSize').value) || 4);
+      const g = responses.length ? splitGender(buildRoster()) : null;
+      [['mHint', 'mSpec', '남'], ['fHint', 'fSpec', '여']].forEach(([hid, sid, key]) => {
+        const el = $(hid);
+        el.className = 'hint-line';
+        const spec = parseSpec($(sid).value);
+        if (!g) {
+          el.textContent = spec.mode === 'auto'
+            ? `${spec.cap}명 기준 자동 분배`
+            : `${spec.rooms.length}개 방 · 정원 ${specTotal(spec)}명`;
+          return;
+        }
+        const n = g[key].length;
+        if (!n) { el.textContent = '해당 학생 없음'; return; }
+        const cap = specTotal(spec, n);
+        if (spec.mode === 'list' && cap < n) {
+          el.className = 'hint-line bad';
+          el.textContent = `⚠ 학생 ${n}명 / 정원 ${cap}명 — ${n - cap}명 자리가 부족해요`;
+          return;
+        }
+        const rooms = fitRooms(spec, n);
+        const empty = cap - n;
+        el.className = 'hint-line good';
+        el.textContent = `학생 ${n}명 → ${rooms.length}개 방 (${rooms.map((r) => r.size).join('·')}명)`
+          + (empty > 0 ? ` · 빈자리 ${empty}` : '');
+      });
     }
 
     // ── 응답 현황 ──
@@ -373,9 +462,10 @@
       return rooms;
     }
 
-    function assign(list, cap) {
-      if (!list.length) return [];
-      const sizes = roomSizes(list.length, cap);
+    function assign(list, spec) {
+      if (!list.length) return { rooms: [], meta: [] };
+      const meta = fitRooms(spec, list.length);
+      const sizes = meta.map((r) => r.size);
       const W = buildW(list);
       let best = null, bestScore = -Infinity;
       for (let t = 0; t < 400; t++) {
@@ -383,7 +473,7 @@
         const sc = totalScore(rooms, W, list);
         if (sc > bestScore) { bestScore = sc; best = rooms.map((r) => r.slice()); }
       }
-      return best;
+      return { rooms: best, meta };
     }
 
     function runAssign() {
@@ -393,10 +483,25 @@
       if (g.미상.length) {
         if (!confirm(`성별이 입력되지 않은 학생이 ${g.미상.length}명 있어요. 그 학생을 빼고 배정할까요?`)) return;
       }
+      // 정원 부족 검사
+      const specs = { 남: parseSpec($('mSpec').value), 여: parseSpec($('fSpec').value) };
+      const short = [];
+      ['남', '여'].forEach((k) => {
+        const n = g[k].length;
+        if (!n) return;
+        const cap = specTotal(specs[k], n);
+        if (specs[k].mode === 'list' && cap < n) short.push(`${k}학생 ${n}명인데 정원이 ${cap}명 (${n - cap}명 부족)`);
+      });
+      if (short.length) {
+        alert('방 정원이 부족합니다.\n\n' + short.join('\n') + '\n\n방 구성을 늘린 뒤 다시 시도해 주세요.');
+        return;
+      }
+
       plan = {};
-      [['남', Number($('mSize').value) || 4], ['여', Number($('fSize').value) || 4]].forEach(([k, cap]) => {
+      ['남', '여'].forEach((k) => {
         const list = g[k];
-        plan[k] = { list, rooms: assign(list, cap) };
+        const r = assign(list, specs[k]);
+        plan[k] = { list, rooms: r.rooms, meta: r.meta };
       });
       sel = null;
       renderRooms();
@@ -456,7 +561,10 @@
         html += `<div class="gsec ${cls}"><div class="gsec-head"><h3>${k === '남' ? '👦 남학생' : '👧 여학생'}</h3>
           <span class="tally">${g.list.length}명 · ${g.rooms.length}개 방</span></div><div class="room-grid">`;
         g.rooms.forEach((room, ri) => {
-          html += `<div class="room"><div class="room-name">${k} ${ri + 1}호실 <span>${room.length}명</span></div>`;
+          const meta = (g.meta || [])[ri] || {};
+          const free = (meta.cap || room.length) - room.length;
+          html += `<div class="room"><div class="room-name">${esc(roomLabel(k, meta, ri))} `
+            + `<span>${room.length}명${free > 0 ? ` · 빈자리 ${free}` : ''}</span></div>`;
           room.forEach((i) => {
             const s = g.list[i];
             const [mc, ml] = markOf(g.list, room, i);
@@ -494,7 +602,7 @@
         const g = plan[k]; if (!g) return;
         g.rooms.forEach((room, ri) => room.forEach((i) => {
           const s = g.list[i];
-          out.push([k, `${k} ${ri + 1}호실`, s.num, s.name, markOf(g.list, room, i)[1]]);
+          out.push([k, roomLabel(k, (g.meta || [])[ri] || {}, ri), s.num, s.name, markOf(g.list, room, i)[1]]);
         }));
       });
       return out;
@@ -524,7 +632,7 @@
         for (let r = 0; r < rooms.length; r += cols) {
           const slice = rooms.slice(r, r + cols);
           const h = 46 + Math.max(...slice.map((x) => x.length)) * lineH;
-          slice.forEach((room, c) => layout.push({ k, ri: r + c, room, x: pad + c * (boxW + gap), y }));
+          slice.forEach((room, c) => layout.push({ k, ri: r + c, room, meta: (plan[k].meta || [])[r + c] || {}, x: pad + c * (boxW + gap), y }));
           y += h + gap;
         }
       });
@@ -556,7 +664,7 @@
         x.lineWidth = 1.5;
         x.beginPath(); x.roundRect(b.x, b.y, boxW, h, 12); x.fill(); x.stroke();
         x.fillStyle = '#0f172a'; x.font = 'bold 16px sans-serif';
-        x.fillText(`${b.k} ${b.ri + 1}호실`, b.x + 14, b.y + 28);
+        x.fillText(roomLabel(b.k, b.meta, b.ri), b.x + 14, b.y + 28);
         x.font = '15px sans-serif';
         b.room.forEach((i, n) => {
           const s = plan[b.k].list[i];
