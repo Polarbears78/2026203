@@ -4,11 +4,22 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Probe new deployment
+      - name: Extract error
         run: |
           EP="https://script.google.com/macros/s/AKfycbxh4kD1tkNfcz3NiCVJ45JXpYWEdZKCu6kHYGEJqtwNFmwdRsd3MxpuJJekqULyQ54/exec"
-          for A in content roomSurvey board studyStats; do
-            echo "===== $A ====="
-            curl -sL "$EP?action=$A" | head -c 500
+          for A in content roomSurvey; do
+            echo "########## $A ##########"
+            curl -sL --max-time 90 "$EP?action=$A" -o /tmp/r.html -w "HTTP=%{http_code} time=%{time_total}s url=%{url_effective}\n"
+            echo "--- <title> ---"
+            grep -o '<title>[^<]*</title>' /tmp/r.html | head -3
+            echo "--- 오류 문구 후보 ---"
+            python3 - <<'PY'
+import re,html
+s=open('/tmp/r.html',encoding='utf-8',errors='ignore').read()
+s=re.sub(r'(?is)<(script|style)[^>]*>.*?</\1>',' ',s)
+t=html.unescape(re.sub(r'(?s)<[^>]+>',' ',s))
+t=re.sub(r'\s+',' ',t).strip()
+print(t[:600] if t else '(본문 텍스트 없음)')
+PY
             echo ""
           done
