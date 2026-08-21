@@ -16,6 +16,13 @@
     .warn-box b { color: #881337; }
     .warn-box ol { margin: 8px 0 0; padding-left: 20px; }
     .warn-box code { background: #ffe4e6; padding: 1px 5px; border-radius: 4px; }
+    #diagResult { margin-top: 14px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    #diagResult table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    #diagResult td { padding: 9px 12px; border-bottom: 1px solid var(--border); }
+    #diagResult tr:last-child td { border-bottom: none; }
+    #diagResult .st-ok { color: #059669; font-weight: 700; }
+    #diagResult .st-no { color: #e11d48; font-weight: 700; }
+    #diagResult .d-url { font-size: .78rem; color: var(--muted); word-break: break-all; padding: 9px 12px; background: #f8fafc; }
   </style>
 </head>
 <body>
@@ -50,6 +57,11 @@
         <input type="password" id="adminKey" placeholder="Apps Script에 등록한 ADMIN_KEY" style="max-width:280px" autocomplete="off" />
         <span class="note" id="keyStatus" style="margin:0"></span>
       </div>
+      <div class="row" style="margin-top:12px;flex-wrap:wrap">
+        <button class="btn btn-ghost" id="diagBtn">🔍 연결 진단</button>
+        <span class="note" style="margin:0">지금 배포된 Apps Script가 어떤 기능을 갖고 있는지 확인합니다.</span>
+      </div>
+      <div id="diagResult" hidden></div>
       <details style="margin-top:12px">
         <summary style="cursor:pointer;font-size:.85rem;font-weight:600;color:var(--muted)">처음 설정하는 방법 (1회)</summary>
         <ol class="steps" style="margin-top:10px;font-size:.88rem">
@@ -509,6 +521,66 @@
         }
       }), 2500);
     }
+    // ── 연결 진단: 배포된 Apps Script가 어떤 action을 지원하는지 확인 ──
+    // 구버전 배포는 JSONP가 아닌 일반 문구를 돌려주므로 파싱 오류가 난다.
+    // script의 onerror는 '파싱' 오류에는 뜨지 않으므로 전역 error로 잡아 즉시 실패 처리한다.
+    const pendingProbes = new Map(); // src → finish 함수
+    window.addEventListener('error', (ev) => {
+      if (!ev.filename) return;
+      const fin = pendingProbes.get(ev.filename);
+      if (fin) fin(false);
+    }, true);
+
+    function probeAction(action) {
+      return new Promise((resolve) => {
+        const cbName = 'onDiag' + action + Math.floor(performance.now());
+        const src = ENDPOINT + '?action=' + action + '&callback=' + cbName + '&_=' + String(performance.now()).replace('.', '');
+        let settled = false;
+        const finish = (ok) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          delete window[cbName];
+          pendingProbes.delete(src);
+          if (sc.parentNode) sc.remove();
+          resolve(ok);
+        };
+        pendingProbes.set(src, finish);
+        window[cbName] = (res) => finish(!!(res && res.ok));
+        const sc = document.createElement('script');
+        sc.src = src;
+        sc.onerror = () => finish(false);
+        const timer = setTimeout(() => finish(false), 10000);
+        document.body.appendChild(sc);
+      });
+    }
+
+    $('diagBtn').addEventListener('click', async () => {
+      const btn = $('diagBtn');
+      const box = $('diagResult');
+      btn.disabled = true; btn.textContent = '확인 중…';
+      box.hidden = false;
+      box.innerHTML = '<div class="d-url">확인 중입니다… 최대 10초</div>';
+
+      const CHECKS = [
+        { a: 'content', label: '주간안내 · 공지 게시', need: true },
+        { a: 'roomSurvey', label: '수학여행 방배정 설문', need: true },
+        { a: 'board', label: '우리 반 게시판', need: false },
+        { a: 'studyStats', label: '방학 학습 기록 통계', need: false },
+      ];
+      const results = await Promise.all(CHECKS.map((c) => probeAction(c.a)));
+
+      const rows = CHECKS.map((c, i) => `<tr><td>${c.label}</td>` +
+        `<td style="text-align:right">${results[i] ? '<span class="st-ok">✅ 사용 가능</span>' : '<span class="st-no">❌ 기능 없음</span>'}</td></tr>`).join('');
+      box.innerHTML = `<table>${rows}</table><div class="d-url">앱이 사용하는 주소: ${esc(ENDPOINT)}</div>`;
+
+      const missing = CHECKS.filter((c, i) => c.need && !results[i]);
+      if (missing.length) showDeployWarning();
+      else $('deployWarn').hidden = true;
+
+      btn.disabled = false; btn.textContent = '🔍 연결 진단';
+    });
+
     $('weeklyPublish').addEventListener('click', () => { collectWeekly(); publish('weekly', weekly, $('weeklyStatus')); });
 
     // ── 주간안내 PDF 저장 (인쇄용 창 → 브라우저에서 'PDF로 저장') ──
