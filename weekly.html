@@ -146,13 +146,22 @@
       done = true;
       const d = res && res.ok && res.content && res.content.weekly && res.content.weekly.data;
       if (d && d.days && d.days.length) render(d);
+      else showFallbackNote();
     };
+    function showFallbackNote() {
+      if (document.getElementById('wFallback')) return;
+      const p = document.createElement('p');
+      p.id = 'wFallback';
+      p.style.cssText = 'text-align:center;font-size:.8rem;color:var(--muted);margin:14px 0 0';
+      p.textContent = '※ 게시된 주간안내를 불러오지 못해 기본 내용을 보여주고 있어요.';
+      document.querySelector('.container').appendChild(p);
+    }
     (function () {
       const s = document.createElement('script');
       s.src = ENDPOINT + '?action=content&callback=onWeeklyContent&_=' + String(performance.now()).replace('.', '');
-      s.onerror = () => {};
+      s.onerror = () => { if (!done) { done = true; showFallbackNote(); } };
       document.body.appendChild(s);
-      setTimeout(() => { if (!done) s.remove(); }, 8000);
+      setTimeout(() => { if (!done) { done = true; s.remove(); showFallbackNote(); } }, 8000);
     })();
 
     if ('serviceWorker' in navigator) {

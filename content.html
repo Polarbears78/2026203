@@ -8,6 +8,15 @@
   <meta name="description" content="주간안내·공지사항을 편집해 학생용 웹 앱에 게시" />
   <link rel="stylesheet" href="admin.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%A2%3C/text%3E%3C/svg%3E" />
+<style>
+    .warn-box {
+      background: #fff1f2; border: 1.5px solid #fecdd3; color: #9f1239;
+      border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; font-size: .92rem; line-height: 1.6;
+    }
+    .warn-box b { color: #881337; }
+    .warn-box ol { margin: 8px 0 0; padding-left: 20px; }
+    .warn-box code { background: #ffe4e6; padding: 1px 5px; border-radius: 4px; }
+  </style>
 </head>
 <body>
   <header class="nav">
@@ -30,6 +39,8 @@
       <h1>콘텐츠 관리</h1>
       <p>주간안내와 공지사항을 편집해 <b>학생용 웹 앱에 게시</b>합니다. 게시하면 구글 시트를 통해 모든 학생 화면에 즉시 반영됩니다.</p>
     </div>
+
+    <div id="deployWarn" class="warn-box" hidden></div>
 
     <!-- 게시 설정 -->
     <section class="card">
@@ -287,6 +298,30 @@
         const m = String(t).match(weekRe);
         if (m) { weekly.week = m[0].replace(/\s+/g, ' ').trim(); found.week = true; break; }
       }
+      // 일정표 요일 헤더에서 주간 범위 만들기 (예: 월(8/17) … 토(8/22) → 8/17(월) ~ 8/22(토))
+      if (!found.week) {
+        const heads = allTexts
+          .map((t) => String(t).replace(/\s+/g, '').match(new RegExp('^([' + DAY + '])[\\(（](\\d{1,2})[\\/\\.월](\\d{1,2})')))
+          .filter(Boolean);
+        if (heads.length >= 2) {
+          const f = heads[0], l = heads[heads.length - 1];
+          weekly.week = `${f[2]}/${f[3]}(${f[1]}) ~ ${l[2]}/${l[3]}(${l[1]})`;
+          found.week = true;
+        }
+      }
+      // 파일명의 날짜(20260818) → 그 주의 월~토
+      if (!found.week) {
+        const fm = String(fileName).match(/(20\d{2})[.\-_]?(\d{2})[.\-_]?(\d{2})/);
+        if (fm) {
+          const d = new Date(Number(fm[1]), Number(fm[2]) - 1, Number(fm[3]));
+          if (!isNaN(d)) {
+            const mon = new Date(d); mon.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+            const sat = new Date(mon); sat.setDate(mon.getDate() + 5);
+            weekly.week = `${mon.getMonth() + 1}/${mon.getDate()}(월) ~ ${sat.getMonth() + 1}/${sat.getDate()}(토)`;
+            found.week = true;
+          }
+        }
+      }
 
       // 2) 시간표: 요일 헤더(월~금 3개 이상)가 있는 표에서 교시 행 추출
       const dayCellRe = new RegExp('^[' + DAY + ']');
@@ -320,16 +355,34 @@
         weekly.timetable = tt;
       }
 
-      // 3) 일정: 요일(날짜) + 내용 형태의 행 (시간표 표 제외)
+      // 3) 일정: 가로형(열=요일)과 세로형(행=요일+내용) 표를 모두 지원
       const evRowRe = new RegExp('^[' + DAY + ']\\s*요?일?\\s*[\\(（]?[0-9\\/\\.월일\\s]*[\\)）]?$');
+      const isDayCell = (v) => v && v.length <= 12 && evRowRe.test(String(v).replace(/\s+/g, ' '));
       const events = [];
       tables.forEach((grid) => {
         if (grid === ttTable) return;
-        grid.forEach((row) => {
-          const di = row.findIndex((v) => v && v.length <= 12 && evRowRe.test(v.replace(/\s+/g, ' ')));
-          if (di < 0) return;
+        grid.forEach((row, r) => {
+          const dayCols = [];
+          row.forEach((v, c) => { if (isDayCell(v)) dayCols.push(c); });
+
+          // (가) 가로형: 한 행에 요일이 2개 이상 → 아래 행들을 열별 내용으로 읽는다
+          if (dayCols.length >= 2) {
+            dayCols.forEach((c) => {
+              const texts = [];
+              for (let r2 = r + 1; r2 < grid.length; r2++) {
+                const v = ((grid[r2] || [])[c] || '').replace(/\n/g, ' ').trim();
+                if (v && !isDayCell(v)) texts.push(v);
+              }
+              if (texts.length) events.push({ day: String(row[c]).replace(/\s+/g, ' '), text: texts.join(' · ') });
+            });
+            return;
+          }
+
+          // (나) 세로형: 한 행에 요일 1개 + 나머지 칸이 내용
+          if (dayCols.length !== 1) return;
+          const di = dayCols[0];
           const text = row.filter((v, i) => i !== di && v && v.trim()).join(' · ').replace(/\n/g, ' ').trim();
-          if (text) events.push({ day: row[di].replace(/\s+/g, ' '), text });
+          if (text) events.push({ day: String(row[di]).replace(/\s+/g, ' '), text });
         });
       });
       lines.forEach((t) => {
@@ -339,7 +392,7 @@
       if (events.length) { weekly.events = events; found.events = events.length; }
 
       // 4) 청소 당번: 구역 키워드가 있는 행
-      const dutyRe = /쓸기|걸레|분리수거|칠판|청소|주번|일지|정리/;
+      const dutyRe = /쓸기|걸레|걸래|마대|분리수거|쓰레기|칠판|청소|주번|일지|정리/;
       const duties = [];
       tables.forEach((grid) => {
         if (grid === ttTable) return;
@@ -353,11 +406,16 @@
       });
       if (duties.length) { weekly.duties = duties; found.duties = duties.length; }
 
-      // 5) 유의사항: 글머리표 문단
-      const notes = lines
-        .filter((t) => /^[※•◦·\-–*○□]/.test(t) || /유의|안전|당부|준비물/.test(t))
+      // 5) 유의사항: 글머리표 문단 + '생활·안전 지도' 같은 섹션 아래의 일반 문단
+      const isHeading = (t) => /^\d+\s*[.)]\s/.test(t) || /주간\s*안내$/.test(t) || /^\d+학년/.test(t);
+      const bulletIdx = lines.findIndex((t) => /생활|안전|유의|당부|준비물/.test(t) && isHeading(t));
+      const tail = bulletIdx >= 0 ? lines.slice(bulletIdx + 1) : [];
+      const notes = [...new Set([
+        ...lines.filter((t) => /^[※•◦·\-–*○□]/.test(t) || /유의|안전|당부|준비물/.test(t)),
+        ...tail,
+      ])]
         .map((t) => t.replace(/^[※•◦·\-–*○□\s]+/, '').trim())
-        .filter((t) => t && !weekRe.test(t) && !/^\d+\.\s/.test(t) && t.length <= 80)
+        .filter((t) => t && !weekRe.test(t) && !isHeading(t) && t.length <= 80)
         .slice(0, 10);
       if (notes.length) { weekly.notes = notes; found.notes = notes.length; }
 
@@ -394,11 +452,36 @@
     // ── 게시(발행) ──
     function fetchContent(cb) {
       const cbName = 'onContent' + Math.floor(performance.now());
-      window[cbName] = (res) => { delete window[cbName]; s.remove(); cb(res); };
+      let settled = false;
+      const finish = (res) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        delete window[cbName];
+        if (s.parentNode) s.remove();
+        cb(res);
+      };
+      window[cbName] = (res) => finish(res);
       const s = document.createElement('script');
       s.src = ENDPOINT + '?action=content&callback=' + cbName + '&_=' + String(performance.now()).replace('.', '');
-      s.onerror = () => { delete window[cbName]; s.remove(); cb(null); };
+      s.onerror = () => finish(null);
+      // 구버전 스크립트는 JSONP가 아닌 일반 문구를 돌려주므로 콜백이 영영 오지 않는다 → 타임아웃으로 처리
+      const timer = setTimeout(() => finish(null), 8000);
       document.body.appendChild(s);
+    }
+
+    function showDeployWarning() {
+      const el = $('deployWarn');
+      el.innerHTML = '<b>⚠ 배포된 Apps Script가 최신 버전이 아닙니다.</b><br>' +
+        '현재 배포본에는 <b>콘텐츠 게시 기능(action=content)</b>이 없어서, 여기서 [게시]를 눌러도 ' +
+        '학생용 <b>주간안내</b> 페이지에 반영되지 않습니다.' +
+        '<ol>' +
+        '<li>저장소의 최신 <code>Code.gs</code> 전체를 복사해 Apps Script 편집기에 <b>덮어쓰기</b> 합니다.</li>' +
+        '<li>⚙️ <b>프로젝트 설정 → 스크립트 속성</b>에 <code>ADMIN_KEY</code>가 있는지 확인합니다. (없으면 추가)</li>' +
+        '<li><b>배포 → 배포 관리 → ✏️ 편집 → 버전: 새 버전 → 배포</b> (주소는 그대로 유지됩니다)</li>' +
+        '<li>이 페이지를 새로고침하면 이 경고가 사라집니다.</li>' +
+        '</ol>';
+      el.hidden = false;
     }
     async function publish(kind, data, statusEl) {
       const key = $('adminKey').value.trim();
@@ -422,6 +505,7 @@
         } else {
           statusEl.textContent = '⚠ 반영이 확인되지 않았습니다 — 관리자 키와 Apps Script 배포(새 버전)를 확인해 주세요.';
           statusEl.style.color = 'var(--danger)';
+          if (!cur) showDeployWarning();
         }
       }), 2500);
     }
@@ -485,6 +569,8 @@
         if (res && res.ok && res.content) {
           published.weekly = res.content.weekly || null;
           published.notice = res.content.notice || null;
+        } else {
+          showDeployWarning();
         }
         if (!weekly) weekly = (published.weekly && published.weekly.data && published.weekly.data.days) ? published.weekly.data : structuredClone(DEFAULT_WEEKLY);
         if (!notices) notices = (published.notice && published.notice.data && published.notice.data.notices) || [];
