@@ -462,24 +462,63 @@
     });
 
     // ── 게시(발행) ──
+    // JSONP 응답이 유효한 JS가 아니면(구버전 배포가 일반 문구를 돌려줄 때) 파싱 오류가 난다.
+    // script의 onerror는 파싱 오류에 뜨지 않으므로 전역 error로 잡아 '구버전'임을 확정한다.
+    // 단순히 응답이 늦은 것(Apps Script 콜드스타트는 30초 이상 걸리기도 함)과 반드시 구분해야 한다.
+    const pendingJsonp = new Map(); // src → finish
+    window.addEventListener('error', (ev) => {
+      if (!ev.filename) return;
+      const fin = pendingJsonp.get(ev.filename);
+      if (fin) fin(null, 'stale');
+    }, true);
+
+    // cb(res, reason) — reason: 'ok' | 'stale'(구버전) | 'timeout' | 'neterror'
     function fetchContent(cb) {
       const cbName = 'onContent' + Math.floor(performance.now());
+      const src = ENDPOINT + '?action=content&callback=' + cbName + '&_=' + String(performance.now()).replace('.', '');
       let settled = false;
-      const finish = (res) => {
+      const finish = (res, reason) => {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
         delete window[cbName];
+        pendingJsonp.delete(src);
         if (s.parentNode) s.remove();
-        cb(res);
+        cb(res, reason || (res ? 'ok' : 'timeout'));
       };
-      window[cbName] = (res) => finish(res);
+      pendingJsonp.set(src, finish);
+      window[cbName] = (res) => finish(res, 'ok');
       const s = document.createElement('script');
-      s.src = ENDPOINT + '?action=content&callback=' + cbName + '&_=' + String(performance.now()).replace('.', '');
-      s.onerror = () => finish(null);
-      // 구버전 스크립트는 JSONP가 아닌 일반 문구를 돌려주므로 콜백이 영영 오지 않는다 → 타임아웃으로 처리
-      const timer = setTimeout(() => finish(null), 8000);
+      s.src = src;
+      s.onerror = () => finish(null, 'neterror');
+      // Apps Script는 오랫동안 쓰지 않으면 첫 응답이 30초 이상 걸릴 수 있다.
+      const timer = setTimeout(() => finish(null, 'timeout'), 30000);
       document.body.appendChild(s);
+    }
+
+    // 응답이 늦거나 실패했을 때 (구버전과 다름 — 단정하지 않는다)
+    function showSlowWarning(reason) {
+      const el = $('deployWarn');
+      el.innerHTML = '<b>⏳ 서버 응답을 아직 받지 못했습니다.</b><br>'
+        + (reason === 'neterror'
+            ? '인터넷 연결 또는 Apps Script 주소를 확인해 주세요.'
+            : 'Apps Script는 오랫동안 쓰지 않으면 첫 응답이 30초 이상 걸릴 수 있어요. '
+              + '<b>구버전이라는 뜻은 아닙니다.</b>')
+        + '<div style="margin-top:10px"><button class="btn btn-ghost" id="retryContent">🔄 다시 확인</button>'
+        + ' <span class="note">또는 [🔍 연결 진단]으로 기능을 확인하세요.</span></div>';
+      el.hidden = false;
+      const btn = $('retryContent');
+      if (btn) btn.addEventListener('click', () => {
+        el.innerHTML = '확인 중입니다… 최대 30초';
+        fetchContent((res, r) => {
+          if (res && res.ok && res.content) {
+            published.weekly = res.content.weekly || null;
+            published.notice = res.content.notice || null;
+            el.hidden = true; renderUpdated();
+          } else if (r === 'stale') showDeployWarning();
+          else showSlowWarning(r);
+        });
+      });
     }
 
     function showDeployWarning() {
@@ -507,8 +546,9 @@
         return;
       }
       statusEl.textContent = '게시 확인 중…';
-      setTimeout(() => fetchContent((res) => {
+      setTimeout(() => fetchContent((res, reason) => {
         const cur = res && res.ok && res.content && res.content[kind];
+        window.__lastPublishReason = reason;
         if (cur && cur.updated && cur.updated !== before) {
           published[kind] = cur;
           statusEl.textContent = '✓ 웹 앱에 게시되었습니다 (' + cur.updated + ')';
@@ -517,7 +557,10 @@
         } else {
           statusEl.textContent = '⚠ 반영이 확인되지 않았습니다 — 관리자 키와 Apps Script 배포(새 버전)를 확인해 주세요.';
           statusEl.style.color = 'var(--danger)';
-          if (!cur) showDeployWarning();
+          if (!cur) {
+            if (window.__lastPublishReason === 'stale') showDeployWarning();
+            else if (window.__lastPublishReason && window.__lastPublishReason !== 'ok') showSlowWarning(window.__lastPublishReason);
+          }
         }
       }), 2500);
     }
@@ -637,12 +680,14 @@
 
     // ── 초기화: 초안 → 게시본 → 기본값 순 ──
     function init() {
-      fetchContent((res) => {
+      fetchContent((res, reason) => {
         if (res && res.ok && res.content) {
           published.weekly = res.content.weekly || null;
           published.notice = res.content.notice || null;
+        } else if (reason === 'stale') {
+          showDeployWarning();          // 구버전이 확실할 때만 단정
         } else {
-          showDeployWarning();
+          showSlowWarning(reason);      // 느리거나 연결 실패 — 구버전이라 단정하지 않음
         }
         if (!weekly) weekly = (published.weekly && published.weekly.data && published.weekly.data.days) ? published.weekly.data : structuredClone(DEFAULT_WEEKLY);
         if (!notices) notices = (published.notice && published.notice.data && published.notice.data.notices) || [];
