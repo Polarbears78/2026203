@@ -1,5 +1,5 @@
 'use strict';
-const SEAT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxh4kD1tkNfcz3NiCVJ45JXpYWEdZKCu6kHYGEJqtwNFmwdRsd3MxpuJJekqULyQ54/exec';
+const SEAT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzewxbmqadjJsrXZxfaMGCWBDS3QOQ2sH2afDfIdoQjWePUaXbuQcEcXnQQijaw9U6p/exec';
 const $ = id => document.getElementById(id);
 let state = null, adminState = null, adminLoaded = false, busy = false, reading = false, mySeat = null;
 let setupRequest = null, epoch = 0;
