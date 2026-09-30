@@ -11,6 +11,11 @@
  * ※ 콘텐츠 게시를 쓰려면 [프로젝트 설정 → 스크립트 속성]에 ADMIN_KEY를 등록하세요.
  */
 function doPost(e) {
+  // Seat requests return their confirmed result, including idempotent retries.
+  try {
+    var seatRequest = JSON.parse(e.postData.contents);
+    if (seatRequest.type === 'seats') return seatResponse_(seatRequest);
+  } catch (ignored) {}
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
@@ -100,6 +105,7 @@ function doPost(e) {
 function doGet(e) {
   var p = (e && e.parameter) || {};
   var cb = p.callback;
+  if (p.action === 'seats') return seatResponse_({ action: 'status' });
 
   if (p.action === 'studyStats') {
     var payload;
@@ -224,4 +230,87 @@ function doGet(e) {
   }
 
   return ContentService.createTextOutput('2학년 3반 폼 수집 엔드포인트가 동작 중입니다.');
+}
+
+// Online seat lottery: one atomic document; student codes are never returned publicly.
+function seatResponse_(d) {
+  var lock = LockService.getScriptLock();
+  var result;
+  try {
+    lock.waitLock(20000);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('자리뽑기');
+    var raw = sheet ? sheet.getRange(1, 1).getValue() : '';
+    var state = raw ? JSON.parse(raw) : null;
+    var action = String(d.action || '');
+    var admin = ['setup', 'adminStatus', 'toggle'].indexOf(action) >= 0;
+    if (admin) {
+      var key = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+      if (!key || String(d.key || '') !== key) throw new Error('관리자 키를 확인해 주세요.');
+    }
+    var changed = false;
+    if (action === 'setup') {
+      // A repeated setup response must not accidentally create another round.
+      if (!d.requestId || !/^[a-zA-Z0-9-]{16,80}$/.test(d.requestId)) throw new Error('요청 번호가 올바르지 않습니다.');
+      if (!state || state.requestId !== d.requestId) {
+        if (String(d.round || '') !== (state ? state.round : '')) throw new Error('회차가 변경되었습니다. 관리 정보를 다시 불러오세요.');
+        var cols = Number(d.cols), rows = Number(d.rows);
+        var nums = d.numbers;
+        if (!Number.isInteger(cols) || !Number.isInteger(rows) || cols < 1 || cols > 10 || rows < 1 || rows > 12) throw new Error('가로 1~10자리, 세로 1~12줄로 설정하세요.');
+        if (!Array.isArray(nums) || !nums.length || nums.length > 80 || nums.length > cols * rows) throw new Error('학생 수보다 자리가 적거나 학생 수가 80명을 넘습니다.');
+        var seen = {};
+        var students = nums.map(function(n) {
+          n = Number(n);
+          if (!Number.isInteger(n) || n < 1 || n > 999 || seen[n]) throw new Error('학생 번호는 중복 없는 1~999 정수여야 합니다.');
+          seen[n] = true;
+          return { num: n, code: Utilities.getUuid().replace(/-/g, ''), seat: null };
+        });
+        state = { round: Utilities.getUuid(), requestId: d.requestId, cols: cols, rows: rows, open: true, students: students };
+        changed = true;
+      }
+    } else if (action === 'draw' || action === 'toggle') {
+      if (!state) throw new Error('선생님이 아직 뽑기를 열지 않았어요.');
+      if (d.round !== state.round) throw new Error('새로운 뽑기가 시작되었어요. 새로고침해 주세요.');
+      if (action === 'toggle') {
+        if (typeof d.open !== 'boolean') throw new Error('진행 상태가 올바르지 않습니다.');
+        state.open = d.open;
+        changed = true;
+      } else {
+        var student = state.students.filter(function(s) { return s.num === Number(d.num) && s.code === String(d.code || ''); })[0];
+        if (!student) throw new Error('내 번호와 개인 참여 코드를 확인해 주세요.');
+        // Return an existing assignment even if the round is now closed.
+        if (student.seat === null) {
+          if (!state.open) throw new Error('지금은 뽑기가 잠시 멈춰 있어요.');
+          var taken = {};
+          state.students.forEach(function(s) { if (s.seat !== null) taken[s.seat] = true; });
+          var available = [];
+          for (var i = 1; i <= state.students.length; i++) if (!taken[i]) available.push(i);
+          if (!available.length) throw new Error('남은 자리가 없습니다.');
+          student.seat = available[Math.floor(Math.random() * available.length)];
+          changed = true;
+        }
+      }
+    } else if (action !== 'status' && action !== 'adminStatus') {
+      throw new Error('지원하지 않는 요청입니다.');
+    }
+    if (changed) {
+      if (!sheet) sheet = ss.insertSheet('자리뽑기');
+      sheet.getRange(1, 1).setValue(JSON.stringify(state));
+      SpreadsheetApp.flush();
+    }
+    result = { ok: true, state: state ? {
+      round: state.round, cols: state.cols, rows: state.rows, open: state.open,
+      students: state.students.map(function(s) {
+        var out = { num: s.num, seat: s.seat };
+        if (admin) out.code = s.code;
+        return out;
+      })
+    } : null };
+    if (action === 'draw') result.seat = student.seat;
+  } catch (err) {
+    result = { ok: false, message: String(err.message || err) };
+  } finally {
+    if (lock.hasLock()) lock.releaseLock();
+  }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
