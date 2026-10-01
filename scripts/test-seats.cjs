@@ -14,16 +14,26 @@ assert.equal(call({action:'setup',key:'wrong'}).ok,false);
 let setup={action:'setup',key:'test-key',requestId:'request-1234567890',round:'',cols:6,rows:5,numbers:Array.from({length:27},(_,i)=>i+1)};
 let r=call(setup);assert(r.ok);const initial=r.state;assert.equal(call(setup).state.round,initial.round);
 assert.equal(call({action:'status'}).state.students[0].code,undefined);
-assert.equal(call({action:'draw',round:initial.round,num:1,code:'wrong'}).ok,false);
+assert.equal(call({action:'choose',round:initial.round,num:1,code:'wrong'}).ok,false);
+assert.equal(call({action:'status'}).mode,'choice');
+const identity={round:initial.round,num:1,code:initial.students[0].code};
+const saved=cell;
+assert.equal(call({action:'mine',...identity}).seat,null);assert.equal(cell,saved);
+for(const seat of [0,28,30,-1,1.5,undefined]) assert.equal(call({action:'choose',...identity,seat}).ok,false);
+assert.equal(call({action:'draw',...identity}).ok,false);
+assert.equal(call({action:'choose',...identity,seat:1}).seat,1);
+assert.equal(call({action:'choose',round:initial.round,num:2,code:initial.students[1].code,seat:1}).ok,false);
+assert.equal(call({action:'choose',...identity,seat:2}).seat,1);
 const seats=new Set();
-for(const s of initial.students){const req={action:'draw',round:initial.round,num:s.num,code:s.code};const a=call(req);assert(a.ok);assert.equal(call(req).seat,a.seat);seats.add(a.seat);assert.equal(a.state.students[0].code,undefined);}
+for(const s of initial.students){const req={action:'choose',round:initial.round,num:s.num,code:s.code,seat:s.num};const a=call(req);assert(a.ok);assert.equal(a.seat,s.num);assert.equal(call(req).seat,a.seat);seats.add(a.seat);assert.equal(a.state.students[0].code,undefined);}
 assert.equal(seats.size,27); assert(Math.max(...seats) === 27);
 assert(call({action:'toggle',key:'test-key',round:initial.round,open:false}).ok);
-assert(call({action:'draw',round:initial.round,num:1,code:initial.students[0].code}).ok);
+assert(call({action:'choose',round:initial.round,num:1,code:initial.students[0].code}).ok);
 assert.equal(call({...setup,round:initial.round,requestId:'another-123456789',numbers:[1,1]}).ok,false);
 let next=call({...setup,round:initial.round,requestId:'another-123456789'}).state;
-assert.equal(call({action:'draw',round:initial.round,num:1,code:initial.students[0].code}).ok,false);
+assert.equal(call({action:'choose',round:initial.round,num:1,code:initial.students[0].code}).ok,false);
 call({action:'toggle',key:'test-key',round:next.round,open:false});
-assert.equal(call({action:'draw',round:next.round,num:1,code:next.students[0].code}).ok,false);
+assert.equal(call({action:'choose',round:next.round,num:1,code:next.students[0].code}).ok,false);
 assert.equal(call({...setup,round:initial.round,requestId:'stale-12345678900'}).ok,false);
-assert(!locked);console.log('PASS: 27 unique assignments, retries, code privacy, authorization, round replacement, pause, stale requests, lock-protected writes.');
+assert(!locked);console.log('PASS: chosen seat honored, collision rejection, invalid seats, read-only lookup, legacy random blocked, 27 unique assignments, retries, code privacy, authorization, round replacement, pause, stale requests, lock-protected writes.');
+

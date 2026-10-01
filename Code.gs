@@ -232,7 +232,7 @@ function doGet(e) {
   return ContentService.createTextOutput('2학년 3반 폼 수집 엔드포인트가 동작 중입니다.');
 }
 
-// Online seat lottery: one atomic document; student codes are never returned publicly.
+// First-come seat selection: one atomic document; student codes are never returned publicly.
 function seatResponse_(d) {
   var lock = LockService.getScriptLock();
   var result;
@@ -268,7 +268,7 @@ function seatResponse_(d) {
         state = { round: Utilities.getUuid(), requestId: d.requestId, cols: cols, rows: rows, open: true, students: students };
         changed = true;
       }
-    } else if (action === 'draw' || action === 'toggle') {
+    } else if (action === 'choose' || action === 'mine' || action === 'toggle') {
       if (!state) throw new Error('선생님이 아직 뽑기를 열지 않았어요.');
       if (d.round !== state.round) throw new Error('새로운 뽑기가 시작되었어요. 새로고침해 주세요.');
       if (action === 'toggle') {
@@ -279,14 +279,12 @@ function seatResponse_(d) {
         var student = state.students.filter(function(s) { return s.num === Number(d.num) && s.code === String(d.code || ''); })[0];
         if (!student) throw new Error('내 번호와 개인 참여 코드를 확인해 주세요.');
         // Return an existing assignment even if the round is now closed.
-        if (student.seat === null) {
+        if (action === 'choose' && student.seat === null) {
           if (!state.open) throw new Error('지금은 뽑기가 잠시 멈춰 있어요.');
-          var taken = {};
-          state.students.forEach(function(s) { if (s.seat !== null) taken[s.seat] = true; });
-          var available = [];
-          for (var i = 1; i <= state.students.length; i++) if (!taken[i]) available.push(i);
-          if (!available.length) throw new Error('남은 자리가 없습니다.');
-          student.seat = available[Math.floor(Math.random() * available.length)];
+          var chosen = Number(d.seat);
+          if (!Number.isInteger(chosen) || chosen < 1 || chosen > state.students.length) throw new Error('선택할 수 있는 빈자리를 눌러 주세요.');
+          if (state.students.some(function(s) { return s.seat === chosen; })) throw new Error('다른 학생이 먼저 선택한 자리예요. 새로고침 후 다른 빈자리를 선택해 주세요.');
+          student.seat = chosen;
           changed = true;
         }
       }
@@ -298,7 +296,7 @@ function seatResponse_(d) {
       sheet.getRange(1, 1).setValue(JSON.stringify(state));
       SpreadsheetApp.flush();
     }
-    result = { ok: true, state: state ? {
+    result = { ok: true, mode: 'choice', state: state ? {
       round: state.round, cols: state.cols, rows: state.rows, open: state.open,
       students: state.students.map(function(s) {
         var out = { num: s.num, seat: s.seat };
@@ -306,7 +304,7 @@ function seatResponse_(d) {
         return out;
       })
     } : null };
-    if (action === 'draw') result.seat = student.seat;
+    if (action === 'choose' || action === 'mine') result.seat = student.seat;
   } catch (err) {
     result = { ok: false, message: String(err.message || err) };
   } finally {
@@ -314,3 +312,4 @@ function seatResponse_(d) {
   }
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
+

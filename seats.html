@@ -3,32 +3,33 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#ff9ecd"><meta name="referrer" content="no-referrer">
-<title>내 자리 뽑기 · 2학년 3반</title>
+<title>내 자리 선택 · 2학년 3반</title>
 <link rel="stylesheet" href="style.css">
 <style>
-.container{max-width:850px}.seat-intro{text-align:center}.seat-intro h2{font-size:1.8rem;margin:12px 0}.eyebrow{color:#99657c;font-weight:800;letter-spacing:.12em}.seat-fields{display:flex;gap:12px;flex-wrap:wrap}.seat-fields .field{flex:1;min-width:150px}input,textarea{box-sizing:border-box;width:100%;font:inherit;padding:12px;border:1px solid #d6c5ce;border-radius:12px}label{display:block;font-weight:bold;margin-bottom:8px}.board-label{background:#354c48;color:white;max-width:300px;margin:8px auto 24px;text-align:center;padding:12px;border-radius:10px;letter-spacing:.3em}.seat-scroll{overflow:auto;padding:4px}.seat-grid{display:grid;gap:9px;min-width:280px}.seat{border:1px solid #ebdce4;background:#fffafd;border-radius:12px;min-height:75px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:.85rem}.seat b{font-size:1.1rem;margin-top:6px}.seat.taken{background:#eaf3ef;border-color:#c0dacf}.seat.unused{background:#f3f1f2;border-style:dashed;color:#999;opacity:.6}.seat.mine{background:#ffe5ef;border:3px solid #bc4774}.seat small{color:#665a61}.result{font-size:1.35rem;text-align:center;font-weight:800;color:#a0325d;margin:18px 0}.muted{color:#70636b;font-size:.9rem}.actions{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0}button{cursor:pointer}button:disabled{opacity:.55;cursor:wait}details summary{cursor:pointer;font-weight:bold}.status{padding:10px 0;min-height:24px}.status.error{color:#ad223c}.code-table{width:100%;border-collapse:collapse}.code-table td,.code-table th{padding:9px;text-align:left;border-bottom:1px solid #eee}.code-table input{font-size:.8rem}.admin-content{margin-top:20px}.hidden{display:none!important}@media print{header,.seat-intro,#studentCard,details,.actions,.status,footer{display:none!important}.card{box-shadow:none;border:0}.container{max-width:none}.seat{break-inside:avoid}}
+.container{max-width:850px}.seat-intro{text-align:center}.seat-intro h2{font-size:1.8rem;margin:12px 0}.eyebrow{color:#99657c;font-weight:800;letter-spacing:.12em}.seat-fields{display:flex;gap:12px;flex-wrap:wrap}.seat-fields .field{flex:1;min-width:150px}input,textarea{box-sizing:border-box;width:100%;font:inherit;padding:12px;border:1px solid #d6c5ce;border-radius:12px}label{display:block;font-weight:bold;margin-bottom:8px}.board-label{background:#354c48;color:white;max-width:300px;margin:8px auto 24px;text-align:center;padding:12px;border-radius:10px;letter-spacing:.3em}.seat-scroll{overflow:auto;padding:4px}.seat-grid{display:grid;gap:9px;min-width:280px}.seat{border:1px solid #ebdce4;background:#fffafd;border-radius:12px;min-height:75px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:.85rem}.seat b{font-size:1.1rem;margin-top:6px}.seat.taken{background:#eaf3ef;border-color:#c0dacf}.seat.unused{background:#f3f1f2;border-style:dashed;color:#999;opacity:.6}.seat.selected{outline:3px solid #bc4774;background:#fff0f6}.seat:disabled{opacity:1;cursor:default}.seat:not(:disabled):hover{border-color:#bc4774;background:#fff0f6}.seat:focus-visible{outline:3px solid #354c48}.seat.mine{background:#ffe5ef;border:3px solid #bc4774}.seat small{color:#665a61}.result{font-size:1.35rem;text-align:center;font-weight:800;color:#a0325d;margin:18px 0}.muted{color:#70636b;font-size:.9rem}.actions{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0}button{cursor:pointer}button:disabled{opacity:.55;cursor:wait}details summary{cursor:pointer;font-weight:bold}.status{padding:10px 0;min-height:24px}.status.error{color:#ad223c}.code-table{width:100%;border-collapse:collapse}.code-table td,.code-table th{padding:9px;text-align:left;border-bottom:1px solid #eee}.code-table input{font-size:.8rem}.admin-content{margin-top:20px}.hidden{display:none!important}@media print{header,.seat-intro,#studentCard,details,.actions,.status,footer{display:none!important}.card{box-shadow:none;border:0}.container{max-width:none}.seat{break-inside:avoid}}
 </style>
 </head>
 <body>
-<header class="topbar"><a class="back-link" href="index.html">‹ 홈</a><h1>🪑 내 자리 뽑기</h1><p class="subtitle">육민관중학교 · 2학년 3반</p></header>
+<header class="topbar"><a class="back-link" href="index.html">‹ 홈</a><h1>🪑 내 자리 선택</h1><p class="subtitle">육민관중학교 · 2학년 3반</p></header>
 <main class="container">
-<section class="card seat-intro"><p class="eyebrow">NEW SEAT, NEW START</p><h2>이번엔 어디에 앉을까?</h2><p>버튼을 누르면 남은 자리 중 하나가 내 자리가 돼요.<br>27명 · 2명씩 3분단으로 앉아요.<br>한 번 정해진 자리는 다시 눌러도 바뀌지 않아요.</p></section>
+<section class="card seat-intro"><p class="eyebrow">NEW SEAT, NEW START</p><h2>이번엔 어디에 앉을까?</h2><p>빈자리를 직접 선택하고 확정하세요. 먼저 확정한 학생의 자리가 돼요.<br>27명 · 2명씩 3분단으로 앉아요.<br>한 번 정해진 자리는 다시 눌러도 바뀌지 않아요.</p></section>
 <section class="card" id="studentCard">
 <form id="drawForm"><div class="seat-fields"><div class="field"><label for="num">내 번호</label><input id="num" type="number" min="1" max="999" required placeholder="예: 3"></div><div class="field"><label for="code">개인 참여 코드</label><input id="code" required autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="선생님이 알려 준 코드"></div></div>
-<button class="btn btn-block" id="drawBtn" disabled>🎲 내 자리 뽑기 / 확인</button></form>
+<button class="btn btn-block" id="drawBtn" disabled>내 확정 자리 확인</button></form><p id="selection" class="muted" aria-live="polite">아래 배치도에서 원하는 빈자리를 선택하세요.</p>
 <p class="muted">개인 링크로 들어오면 번호와 코드가 자동으로 채워져요. 참여 코드는 나만 사용해요.</p><div id="result" class="result" role="status" aria-live="polite"></div>
 </section>
-<p id="status" class="status" role="status" aria-live="polite">뽑기 정보를 확인하고 있어요…</p>
+<p id="status" class="status" role="status" aria-live="polite">선택 정보를 확인하고 있어요…</p>
 <section class="card"><h2 class="card-title">우리 반 자리 배치</h2><p id="progress" class="muted"></p><div class="board-label">칠판 / 교탁</div><div class="seat-scroll"><div id="grid" class="seat-grid"></div></div><div class="actions"><button class="btn" id="refresh">↻ 새로고침</button><button class="btn" id="print">배치도 인쇄</button></div><p class="muted">칠판을 바라보는 학생 기준으로 왼쪽부터 1열, 앞에서부터 1줄이에요. 배정 현황은 15초마다 갱신돼요.</p></section>
-<details class="card" id="teacher"><summary>선생님 · 뽑기 관리</summary><div class="admin-content">
+<details class="card" id="teacher"><summary>선생님 · 선택 관리</summary><div class="admin-content">
 <p class="muted">기존 콘텐츠 관리의 관리자 키를 사용합니다. 처음 사용 시 Apps Script 업데이트가 필요합니다.</p>
 <label for="adminKey">관리자 키</label><input id="adminKey" type="password" autocomplete="off"><div class="actions"><button class="btn" id="adminLoad">관리 정보 불러오기</button></div>
 <div class="seat-fields"><div class="field"><label for="cols">가로 자리 수 (2명 × 3분단 = 6)</label><input id="cols" type="number" min="1" max="10" value="6"></div><div class="field"><label for="rows">세로 줄 수</label><input id="rows" type="number" min="1" max="12" value="5"></div></div>
 <label for="numbers">참여 학생 번호 (쉼표 또는 줄바꿈 구분)</label><textarea id="numbers" rows="3">1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27</textarea>
-<p class="muted">학생 수보다 많은 칸은 맨 뒤 오른쪽부터 비워 둡니다. 새 뽑기를 시작하면 현재 배치와 참여 코드가 교체됩니다. 필요하면 먼저 배치도를 인쇄해 주세요.</p>
-<div class="actions"><button class="btn" id="setup" disabled>새 뽑기 시작</button><button class="btn" id="toggle" disabled>뽑기 중지 / 재개</button><button class="btn" id="download" disabled>개인 링크 내려받기</button></div>
+<p class="muted">학생 수보다 많은 칸은 맨 뒤 오른쪽부터 비워 둡니다. 새 선택를 시작하면 현재 배치와 참여 코드가 교체됩니다. 필요하면 먼저 배치도를 인쇄해 주세요.</p>
+<div class="actions"><button class="btn" id="setup" disabled>새 선택 시작</button><button class="btn" id="toggle" disabled>선택 중지 / 재개</button><button class="btn" id="download" disabled>개인 링크 내려받기</button></div>
 <p id="adminStatus" role="status" aria-live="polite"></p><div id="codes"></div>
 <p class="muted">개인 링크는 해당 학생에게만 전달하세요. 전체 목록은 학생들에게 공유하지 마세요.</p>
 </div></details><footer class="foot">2학년 3반 · 내 자리에서 시작하는 새로운 하루</footer>
-</main><script src="seats.js?v=20260930-2"></script>
+</main><script src="seats.js?v=20261001-choice"></script>
 </body></html>
+
