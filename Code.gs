@@ -7,6 +7,7 @@
  * - 콘텐츠 읽기(GET action=content) → 주간안내·공지사항 JSONP 반환
  * - 방배정 희망조사(type=room) → '방배정설문' 탭
  * - 방배정 읽기(GET action=roomSurvey) → 교사용 배정 페이지에 JSONP 반환
+ * - 진로의 날 직업 선택(type=career / GET action=career) → '진로의날' 탭, 직업·교시별 선착순 정원
  * 설정 방법은 SHEET_SETUP.md 참고.
  * ※ 콘텐츠 게시를 쓰려면 [프로젝트 설정 → 스크립트 속성]에 ADMIN_KEY를 등록하세요.
  */
@@ -15,6 +16,7 @@ function doPost(e) {
   try {
     var seatRequest = JSON.parse(e.postData.contents);
     if (seatRequest.type === 'seats') return seatResponse_(seatRequest);
+    if (seatRequest.type === 'career') return careerResponse_(seatRequest);
   } catch (ignored) {}
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
@@ -106,6 +108,7 @@ function doGet(e) {
   var p = (e && e.parameter) || {};
   var cb = p.callback;
   if (p.action === 'seats') return seatResponse_({ action: 'status' });
+  if (p.action === 'career') return careerResponse_({ action: 'status' });
 
   if (p.action === 'studyStats') {
     var payload;
@@ -313,3 +316,93 @@ function seatResponse_(d) {
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
 
+
+// 진로의 날 직업 선택: 3교시 1개 + 4교시 1개, 직업·교시별 선착순 정원.
+// 상태 전체를 '진로의날' 시트 A1에 JSON 한 덩어리로 저장하고, 3행부터는 교사 확인용 표를 다시 그린다.
+var CAREER_JOBS = [
+  { name: '애견케어 전문가', room: '3학년 1반' }, { name: '공예 디자이너', room: '3학년 2반' },
+  { name: '마술사', room: '3학년 3반' }, { name: '바리스타', room: '2학년 1반' },
+  { name: 'AI전문가', room: '2학년 2반' }, { name: '캘리그라피작가', room: '2학년 3반' },
+  { name: '자세교정 전문가', room: '1학년 1반' }, { name: '푸드스타일리스트', room: '1학년 2반' },
+  { name: '마케팅 전문가', room: '1학년 3반' }
+];
+var CAREER_CAP = 3;        // 직업·교시별 정원
+var CAREER_MAX_NUM = 27;   // 학급 번호 범위(1~27)
+var CAREER_SAME_JOB = false; // true면 3·4교시에 같은 직업 선택 허용
+
+function careerResponse_(d) {
+  var lock = LockService.getScriptLock();
+  var result;
+  try {
+    lock.waitLock(20000);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('진로의날');
+    var raw = sheet ? sheet.getRange(1, 1).getValue() : '';
+    var state = raw ? JSON.parse(raw) : { open: false, picks: {} };
+    var action = String(d.action || '');
+    var admin = ['adminStatus', 'toggle', 'reset', 'resetAll'].indexOf(action) >= 0;
+    if (admin) {
+      var key = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+      if (!key || String(d.key || '') !== key) throw new Error('관리자 키를 확인해 주세요.');
+    }
+    var changed = false, mine = null;
+    var count = function(period, job) {
+      var n = 0;
+      for (var k in state.picks) if (state.picks[k][period] === job) n++;
+      return n;
+    };
+    if (action === 'choose') {
+      var num = Number(d.num), name = String(d.name || '').trim().slice(0, 10);
+      var p3 = Number(d.p3), p4 = Number(d.p4);
+      if (!Number.isInteger(num) || num < 1 || num > CAREER_MAX_NUM) throw new Error('번호는 1~' + CAREER_MAX_NUM + ' 사이로 입력해 주세요.');
+      if (state.picks[num]) {
+        mine = state.picks[num]; // 이미 확정된 번호: 바꾸지 않고 기존 선택을 그대로 돌려준다.
+      } else {
+        if (!name) throw new Error('이름을 입력해 주세요.');
+        if (!state.open) throw new Error('지금은 신청 시간이 아니에요. 선생님 안내를 기다려 주세요.');
+        var valid = function(j) { return Number.isInteger(j) && j >= 0 && j < CAREER_JOBS.length; };
+        if (!valid(p3) || !valid(p4)) throw new Error('3교시와 4교시 직업을 하나씩 선택해 주세요.');
+        if (!CAREER_SAME_JOB && p3 === p4) throw new Error('3교시와 4교시는 서로 다른 직업을 선택해 주세요.');
+        if (count('p3', p3) >= CAREER_CAP) throw new Error('3교시 ' + CAREER_JOBS[p3].name + '은(는) 방금 마감됐어요. 다른 직업을 선택해 주세요.');
+        if (count('p4', p4) >= CAREER_CAP) throw new Error('4교시 ' + CAREER_JOBS[p4].name + '은(는) 방금 마감됐어요. 다른 직업을 선택해 주세요.');
+        mine = state.picks[num] = { name: name, p3: p3, p4: p4, at: new Date().toISOString() };
+        changed = true;
+      }
+    } else if (action === 'toggle') {
+      if (typeof d.open !== 'boolean') throw new Error('진행 상태가 올바르지 않습니다.');
+      state.open = d.open; changed = true;
+    } else if (action === 'reset') {
+      if (!state.picks[Number(d.num)]) throw new Error('해당 번호의 신청 내역이 없습니다.');
+      delete state.picks[Number(d.num)]; changed = true;
+    } else if (action === 'resetAll') {
+      state = { open: false, picks: {} }; changed = true;
+    } else if (action !== 'status' && action !== 'adminStatus') {
+      throw new Error('지원하지 않는 요청입니다.');
+    }
+    if (changed) {
+      if (!sheet) sheet = ss.insertSheet('진로의날');
+      sheet.getRange(1, 1).setValue(JSON.stringify(state));
+      var rows = [['번호', '이름', '3교시', '4교시', '신청시각']];
+      Object.keys(state.picks).map(Number).sort(function(a, b) { return a - b; }).forEach(function(n) {
+        var k = state.picks[n];
+        rows.push([n, k.name, CAREER_JOBS[k.p3].name, CAREER_JOBS[k.p4].name, k.at]);
+      });
+      sheet.getRange(3, 1, CAREER_MAX_NUM + 1, 5).clearContent();
+      sheet.getRange(3, 1, rows.length, 5).setValues(rows);
+      SpreadsheetApp.flush();
+    }
+    // 공개 응답에는 이름을 넣지 않고 번호만 넣는다.
+    var picks = Object.keys(state.picks).map(Number).sort(function(a, b) { return a - b; }).map(function(n) {
+      var k = state.picks[n], out = { num: n, p3: k.p3, p4: k.p4 };
+      if (admin) { out.name = k.name; out.at = k.at; }
+      return out;
+    });
+    result = { ok: true, mode: 'career', state: { open: state.open, cap: CAREER_CAP, maxNum: CAREER_MAX_NUM, sameJob: CAREER_SAME_JOB, jobs: CAREER_JOBS, picks: picks } };
+    if (mine) result.mine = { p3: mine.p3, p4: mine.p4 };
+  } catch (err) {
+    result = { ok: false, message: String(err.message || err) };
+  } finally {
+    if (lock.hasLock()) lock.releaseLock();
+  }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}

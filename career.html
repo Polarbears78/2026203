@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#ff9ecd"><meta name="referrer" content="no-referrer">
+<title>진로의 날 직업 선택 · 2학년 3반</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.container{max-width:850px}.intro{text-align:center}.intro h2{font-size:1.6rem;margin:10px 0}.eyebrow{color:#99657c;font-weight:800;letter-spacing:.12em}
+.fields{display:flex;gap:12px;flex-wrap:wrap}.fields .field{flex:1;min-width:140px}
+input{box-sizing:border-box;width:100%;font:inherit;padding:12px;border:1px solid #d6c5ce;border-radius:12px}
+label{display:block;font-weight:bold;margin-bottom:8px}
+.jobs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px}
+.job{font:inherit;color:inherit;border:1px solid #ebdce4;background:#fffafd;border-radius:14px;padding:12px 10px;min-height:86px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;cursor:pointer}
+.job b{font-size:1rem}.job small{color:#665a61}.job .left{font-weight:800;color:#2f7d5b;font-size:.85rem}
+.job:not(:disabled):hover{border-color:#bc4774;background:#fff0f6}.job:focus-visible{outline:3px solid #354c48}
+.job.selected{outline:3px solid #bc4774;background:#fff0f6}
+.job.full{background:#f3f1f2;border-style:dashed}.job.full .left{color:#ad223c}
+.job.other{opacity:.5}.job.mine{background:#ffe5ef;border:3px solid #bc4774}
+.job:disabled{cursor:default}
+.result{font-size:1.2rem;text-align:center;font-weight:800;color:#a0325d;margin:16px 0}
+.muted{color:#70636b;font-size:.9rem}.actions{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0}
+button{cursor:pointer}button:disabled{cursor:default}.btn:disabled{opacity:.55}
+.status{padding:10px 0;min-height:24px}.status.error{color:#ad223c;font-weight:bold}
+details summary{cursor:pointer;font-weight:bold}.admin-content{margin-top:20px}
+.scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.9rem}
+td,th{padding:8px;text-align:left;border-bottom:1px solid #eee;white-space:nowrap}
+.mini{font:inherit;font-size:.8rem;padding:4px 10px;border:1px solid #d6c5ce;border-radius:8px;background:#fff}
+</style>
+</head>
+<body>
+<header class="topbar"><a class="back-link" href="index.html">‹ 홈</a><h1>🧭 진로의 날 직업 선택</h1><p class="subtitle">육민관중학교 · 2학년 3반 · 12월 16일</p></header>
+<main class="container">
+<section class="card intro"><p class="eyebrow">CAREER DAY</p><h2>어떤 직업을 만나 볼까?</h2><p>3교시에 1개, 4교시에 1개를 골라요. 두 교시는 서로 다른 직업이어야 해요.<br>직업마다 교시별 <b>3명</b>까지, 먼저 확정한 순서로 마감돼요.<br>한 번 확정하면 바꿀 수 없으니 신중하게 골라 주세요.</p></section>
+
+<section class="card">
+<form id="form"><div class="fields"><div class="field"><label for="num">내 번호</label><input id="num" type="number" min="1" max="27" inputmode="numeric" required placeholder="예: 3"></div><div class="field"><label for="name">이름</label><input id="name" maxlength="10" required autocomplete="off" placeholder="예: 홍길동"></div></div>
+<p id="selection" class="muted" aria-live="polite"></p>
+<button class="btn btn-block" id="submit" disabled>확정하기</button></form>
+<div id="result" class="result" role="status" aria-live="polite"></div>
+</section>
+<p id="status" class="status" role="status" aria-live="polite">신청 현황을 확인하고 있어요…</p>
+
+<section class="card"><h2 class="card-title">3교시 직업</h2><div id="p3" class="jobs"></div></section>
+<section class="card"><h2 class="card-title">4교시 직업</h2><div id="p4" class="jobs"></div>
+<div class="actions"><button class="btn" id="refresh" type="button">↻ 새로고침</button></div>
+<p id="progress" class="muted"></p><p class="muted">선택만으로는 예약되지 않아요. 위의 확정 버튼을 눌러야 내 자리가 돼요. 현황은 10초마다 갱신돼요.</p></section>
+
+<details class="card" id="teacher"><summary>선생님 · 신청 관리</summary><div class="admin-content">
+<label for="adminKey">관리자 키</label><input id="adminKey" type="password" autocomplete="off">
+<div class="actions"><button class="btn" id="adminLoad" type="button">관리 정보 불러오기</button><button class="btn" id="toggle" type="button" disabled>신청 시작</button><button class="btn" id="download" type="button" disabled>명단 내려받기(CSV)</button><button class="btn btn-danger" id="resetAll" type="button" disabled>전체 초기화</button></div>
+<p id="adminStatus" role="status" aria-live="polite" class="muted">신청은 선생님이 [신청 시작]을 눌러야 열립니다.</p>
+<h3>직업별 명단</h3><div class="scroll"><table id="byJob"></table></div>
+<h3>번호별 신청 내역</h3><div class="scroll"><table id="byNum"></table></div>
+<p class="muted">미신청 번호: <span id="missing">-</span></p>
+</div></details>
+<footer class="foot">2학년 3반 · 2026학년도 진로의 날</footer>
+</main><script src="career.js?v=20261112"></script>
+</body></html>
